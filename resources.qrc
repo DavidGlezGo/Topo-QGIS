@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/topopy_profiler" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
