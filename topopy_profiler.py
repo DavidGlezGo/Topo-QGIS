@@ -100,6 +100,8 @@ class TopopyProfiler:
 		self.Kcanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
 		self.Scanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
 		
+		
+		
 		self.Eaxes = self.Ecanvas.figure.add_subplot()
 		self.Caxes = self.Ccanvas.figure.add_subplot()
 		self.Kaxes = self.Kcanvas.figure.add_subplot()
@@ -131,6 +133,7 @@ class TopopyProfiler:
 		self.dockwidget.GoButton.setEnabled(False)
 		self.dockwidget.GoSpinBox.setEnabled(False)
 		self.dockwidget.AllCheckBox.setEnabled(False)
+		self.dockwidget.KnickButton.setEnabled(False)
 		
 		# Set the properties of the temporary layer
 		self.rubberband = QgsRubberBand(self.iface.mapCanvas(), False)
@@ -284,6 +287,8 @@ class TopopyProfiler:
 		self.dockwidget.GoSpinBox.setEnabled(False)
 		self.dockwidget.AllCheckBox.setEnabled(False)
 		self.dockwidget.AllCheckBox.setChecked(False)
+		self.dockwidget.KnickButton.setEnabled(False)	
+		
 		self.all = False
 		self.knick = False
 		self.clear_graph()
@@ -347,7 +352,8 @@ class TopopyProfiler:
 		self.dockwidget.AllCheckBox.clicked.connect(self.all_channels)
 		self.dockwidget.KnickButton.clicked.connect(self.check_knickpoints)
 		self.dockwidget.SaveButton.clicked.connect(self.save)
-
+		
+		
 		# Help message at the bottom of the QGis window
 		self.iface.mainWindow().statusBar().showMessage( "Set CHANNELS file (.npy), then click on \"READ\" to display the profiles." )
 
@@ -382,7 +388,8 @@ class TopopyProfiler:
 			self.dockwidget.GoButton.setEnabled(True)
 			self.dockwidget.GoSpinBox.setEnabled(True)
 			self.dockwidget.AllCheckBox.setEnabled(True)
-
+			self.dockwidget.KnickButton.setEnabled(True)
+			
 			self.iface.mainWindow().statusBar().showMessage( "" )
 
 			
@@ -410,6 +417,11 @@ class TopopyProfiler:
 		self.Cpoint = self.Ccanvas.mpl_connect('motion_notify_event', self.C_move)
 		self.Kpoint = self.Kcanvas.mpl_connect('motion_notify_event', self.D_move)
 		self.Spoint = self.Scanvas.mpl_connect('motion_notify_event', self.D_move)
+
+		# self.Ecanvas.figure.tight_layout(pad=2, w_pad=0, h_pad=0)			
+		# self.Ccanvas.figure.tight_layout(pad=2, w_pad=0, h_pad=0)	
+		# self.Kcanvas.figure.tight_layout(pad=2, w_pad=0, h_pad=0)	
+		# self.Scanvas.figure.tight_layout(pad=2, w_pad=0, h_pad=0)	
 		
 		# Show the profiles
 		self.draw_graph()
@@ -542,7 +554,8 @@ class TopopyProfiler:
 			self.dockwidget.NextButton.setEnabled(False)
 			self.dockwidget.GoButton.setEnabled(False)
 			self.dockwidget.GoSpinBox.setEnabled(False)
-
+			self.dockwidget.PrevButton.setEnabled(False)
+			
 			self.Ecanvas.mpl_disconnect(self.Epoint)
 			self.Ccanvas.mpl_disconnect(self.Cpoint)
 			self.Kcanvas.mpl_disconnect(self.Kpoint)
@@ -565,6 +578,7 @@ class TopopyProfiler:
 
 			self.dockwidget.GoButton.setEnabled(True)
 			self.dockwidget.GoSpinBox.setEnabled(True)
+			self.dockwidget.KnickButton.setEnabled(True)
 
 	def clear_graph(self):
 		""" Clear all graphs """
@@ -585,7 +599,7 @@ class TopopyProfiler:
 		self.Kaxes.set_ylabel("ksn")
 		self.Saxes.set_xlabel("Distance to mouth [m]")
 		self.Saxes.set_ylabel("Slope [%]")
-		
+			
 		self.Ecanvas.draw()
 		self.Ccanvas.draw()
 		self.Kcanvas.draw()
@@ -721,9 +735,10 @@ class TopopyProfiler:
 			
 			self.dockwidget.AllCheckBox.setEnabled(False)
 			
+			self.dockwidget.lineEdit_3.setText(str(self.knick))				
 		
 		else:
-			self.knick == False
+			self.knick = False
 			
 			self.Ecanvas.mpl_disconnect(self.Eknick)
 			self.Ccanvas.mpl_disconnect(self.Cknick)
@@ -732,3 +747,4 @@ class TopopyProfiler:
 			
 			self.dockwidget.AllCheckBox.setEnabled(True)
 			
+			self.dockwidget.lineEdit_3.setText(str(self.knick))		
