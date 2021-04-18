@@ -285,6 +285,7 @@ class TopopyProfiler:
 		self.dockwidget.AllCheckBox.setEnabled(False)
 		self.dockwidget.AllCheckBox.setChecked(False)
 		self.all = False
+		self.knick = False
 		self.clear_graph()
 		self.draw_graph()
 		self.graph = 0
@@ -344,12 +345,14 @@ class TopopyProfiler:
 		self.dockwidget.PrevButton.clicked.connect(self.prev_graph)
 		self.dockwidget.GoButton.clicked.connect(self.go_graph)
 		self.dockwidget.AllCheckBox.clicked.connect(self.all_channels)
+		self.dockwidget.KnickButton.clicked.connect(self.check_knickpoints)
 		self.dockwidget.SaveButton.clicked.connect(self.save)
 
 		# Help message at the bottom of the QGis window
 		self.iface.mainWindow().statusBar().showMessage( "Set CHANNELS file (.npy), then click on \"READ\" to display the profiles." )
 
 		self.all = False
+		self.knick = False
 		
 		# show the dockwidget
 		# TODO: fix to allow choice of dock location
@@ -363,29 +366,31 @@ class TopopyProfiler:
 	def calculate_channels(self):
 		""" Calculate all elements of topopy """
 		filename = self.dockwidget.FileLineEdit.text()
-		self.CHs = np.load(str(filename), allow_pickle=True)
+		if filename:
 
-		# Set first channel to plot 
-		self.graph = 0
-		
-		self.change_graph()
-		
-		# Turn on the buttons and display the number of channels 
-		self.dockwidget.GoSpinBox.setMaximum(int(len(self.CHs)))
-		self.dockwidget.NcLabelValue.setText(str(len(self.CHs)))
-		self.dockwidget.NextButton.setEnabled(True)
-		self.dockwidget.GoButton.setEnabled(True)
-		self.dockwidget.GoSpinBox.setEnabled(True)
-		self.dockwidget.AllCheckBox.setEnabled(True)
+			self.CHs = np.load(str(filename), allow_pickle=True)
 
-		self.iface.mainWindow().statusBar().showMessage( "" )
+			# Set first channel to plot 
+			self.graph = 0
+			
+			self.change_graph()
+			
+			# Turn on the buttons and display the number of channels 
+			self.dockwidget.GoSpinBox.setMaximum(int(len(self.CHs)))
+			self.dockwidget.NcLabelValue.setText(str(len(self.CHs)))
+			self.dockwidget.NextButton.setEnabled(True)
+			self.dockwidget.GoButton.setEnabled(True)
+			self.dockwidget.GoSpinBox.setEnabled(True)
+			self.dockwidget.AllCheckBox.setEnabled(True)
 
-		
-		self.d_all = []
-		self.z_all = []
-		self.chi_all = []
-		self.ksn_all = []
-		self.slp_all = []
+			self.iface.mainWindow().statusBar().showMessage( "" )
+
+			
+			self.d_all = []
+			self.z_all = []
+			self.chi_all = []
+			self.ksn_all = []
+			self.slp_all = []
 		
 	def change_graph(self):
 		""" Change the plotted channel """
@@ -405,11 +410,6 @@ class TopopyProfiler:
 		self.Cpoint = self.Ccanvas.mpl_connect('motion_notify_event', self.C_move)
 		self.Kpoint = self.Kcanvas.mpl_connect('motion_notify_event', self.D_move)
 		self.Spoint = self.Scanvas.mpl_connect('motion_notify_event', self.D_move)
-		
-		self.Eknick = self.Ecanvas.mpl_connect('button_press_event', self.D_knpoint)
-		self.Cknick = self.Ccanvas.mpl_connect('button_press_event', self.D_knpoint)
-		self.Kknick = self.Kcanvas.mpl_connect('button_press_event', self.D_knpoint)
-		self.Sknick = self.Scanvas.mpl_connect('button_press_event', self.D_knpoint)
 		
 		# Show the profiles
 		self.draw_graph()
@@ -543,18 +543,15 @@ class TopopyProfiler:
 			self.dockwidget.GoButton.setEnabled(False)
 			self.dockwidget.GoSpinBox.setEnabled(False)
 
-			self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
-			self.rubberknick.reset(QgsWkbTypes.PointGeometry)	
-			
 			self.Ecanvas.mpl_disconnect(self.Epoint)
 			self.Ccanvas.mpl_disconnect(self.Cpoint)
 			self.Kcanvas.mpl_disconnect(self.Kpoint)
 			self.Scanvas.mpl_disconnect(self.Spoint)
 
-			self.Ecanvas.mpl_disconnect(self.Eknick)
-			self.Ccanvas.mpl_disconnect(self.Cknick)
-			self.Kcanvas.mpl_disconnect(self.Kknick)
-			self.Scanvas.mpl_disconnect(self.Sknick)			
+			self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
+			self.rubberknick.reset(QgsWkbTypes.PointGeometry)	
+			
+		
 			
 		else:
 			self.all = False
@@ -606,8 +603,8 @@ class TopopyProfiler:
 
 
 	def select_output_file(self):
-	  filename, _filter = QFileDialog.getOpenFileName(self.dockwidget, "Select Channels file ","", 'NPY files (*.npy)')
-	  self.dockwidget.FileLineEdit.setText(filename)
+		filename, _filter = QFileDialog.getOpenFileName(self.dockwidget, "Select Channels file ","", 'NPY files (*.npy)')
+		self.dockwidget.FileLineEdit.setText(filename)
 
 
 	def D_move(self, event):
@@ -624,11 +621,12 @@ class TopopyProfiler:
 		# get the x and y pixel coords
 		x, y = event.x, event.y
 		if event.inaxes:
-			self.dockwidget.lineEdit_2.setText('data coords %f %f' % (event.xdata, event.ydata))
+
 			self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
-			i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+			i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
 			xy = self.channel.get_xy()[i]
 			self.rubberpoint.addPoint(QgsPointXY(xy[0], xy[1]))	
+			self.dockwidget.lineEdit_2.setText('data coords %f %f' % (event.xdata, event.ydata)+ '/' + str(i))
 	
 	def D_knpoint(self, event):
 		# get the x and y pixel coords
@@ -660,28 +658,27 @@ class TopopyProfiler:
 	def C_knpoint(self, event):
 		# get the x and y pixel coords
 		x, y = event.x, event.y
+		
 		if event.inaxes:
-			kpoints = self.channel._knickpoints
+
 			if event.button == 1:
-				final_value = self.near(list(self.channel.get_chi()), event.xdata, float("inf"))
-				i = list(self.channel.get_chi()).index(final_value)
-				kpoints.append(i)
+				
+				i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
+				self.CHs[self.graph]._knickpoints.append(i)
 
 			if event.button == 3:
-				final_value = self.near(list(self.channel.get_chi()), event.xdata, float("inf"))
-				i = list(self.channel.get_chi()).index(final_value)
-				xy = self.channel.get_xy()[i]
+				i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
 				self.dockwidget.lineEdit_3.setText(str(i))	
-	
-				value = self.near(list(kpoints), i, int(2+len(self.channel.get_chi())*0.025))	
-				self.dockwidget.lineEdit_2.setText(str(int(2+len(self.channel.get_chi())*0.025)))			
-				kpoints.pop(kpoints.index(value))
-				self.rubberknick.reset(QgsWkbTypes.PointGeometry)
+				
+				i = np.abs(list(self.CHs[self.graph]._knickpoints) - i).argmin()
+
+				self.CHs[self.graph]._knickpoints.pop(i)
+
 				
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 			
-			
-			self.dockwidget.lineEdit.setText(str(kpoints)+ str(len(kpoints)))
+		
+
 			self.show_knickpoints(self.channel)	
 
 
@@ -693,7 +690,7 @@ class TopopyProfiler:
 			xy = channel.get_xy()[kp]
 			self.rubberknick.addPoint(QgsPointXY(xy[0], xy[1]))		
 			
-			self.dockwidget.lineEdit_2.setText(str(list(self.channel.get_d(head=False))[kp])+ '/' +str(kp))	
+			self.dockwidget.lineEdit_2.setText(str(list(self.channel.get_d(head=False))[kp])+ '/' + str(kp))	
 			
 			self.Eaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_z()[kp], color="b", ls="None", marker="d", ms=10)
 			# Chi profile
@@ -705,8 +702,33 @@ class TopopyProfiler:
 		self.draw_graph()
 
 	def save (self):
-		
-		with open('C:/Users/david/Desktop/CHs.npy', 'wb') as f:
-			np.save(f, self.CHs)
+	
+		filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, "Select Channels file ","", 'NPY files (*.npy)')
+		if filename:
+			with open(filename, 'wb') as f:
+				np.save(f, self.CHs)
 			
 	
+	def check_knickpoints (self):
+	
+		if 	self.knick == False:
+			self.knick = True
+			
+			self.Eknick = self.Ecanvas.mpl_connect('button_press_event', self.D_knpoint)
+			self.Cknick = self.Ccanvas.mpl_connect('button_press_event', self.C_knpoint)
+			self.Kknick = self.Kcanvas.mpl_connect('button_press_event', self.D_knpoint)
+			self.Sknick = self.Scanvas.mpl_connect('button_press_event', self.D_knpoint)
+			
+			self.dockwidget.AllCheckBox.setEnabled(False)
+			
+		
+		else:
+			self.knick == False
+			
+			self.Ecanvas.mpl_disconnect(self.Eknick)
+			self.Ccanvas.mpl_disconnect(self.Cknick)
+			self.Kcanvas.mpl_disconnect(self.Kknick)
+			self.Scanvas.mpl_disconnect(self.Sknick)	
+			
+			self.dockwidget.AllCheckBox.setEnabled(True)
+			
