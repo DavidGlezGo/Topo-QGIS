@@ -136,7 +136,7 @@ class Get_Channels(QgsProcessingAlgorithm):
 			else:
 				mouths.append((u[0],u[1]))
 
-		feedback.setProgressText('(3/3) Calculating and organizing channels, (if there are many channels it may take a bit).')	
+		feedback.setProgressText('(3/3) Calculating and organizing channels')#, (if there are many channels it may take a bit).')	
 
 		Dicc_L = {}
 		Dicc_CH = {}

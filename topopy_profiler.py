@@ -530,20 +530,22 @@ class TopopyProfiler:
 					self.ksn_all += list(self.CHs[n].get_ksn())
 					self.chi_all += list(self.CHs[n].get_chi())
 					self.slp_all += list(self.CHs[n].get_slope())
-
-			# Set the Profiles
-			# Elevation profile
-			self.Eaxes.plot(self.d_all, self.z_all, color="0", ls="None", marker="o", ms=1)
-			self.Eaxes.set_xlim(xmin=0, xmax=max(self.d_all))
-			# Chi profile
-			self.Caxes.plot(self.chi_all, self.z_all, color="0", ls="None", marker="o", ms=1)
-			self.Caxes.set_xlim(xmin=min(self.chi_all), xmax=max(self.chi_all))
-			# Ksn profile
-			self.Kaxes.plot(self.d_all, self.ksn_all,  color="0", ls="None", marker="o", ms=1)
-			self.Kaxes.set_xlim(xmin=0, xmax=max(self.d_all))
-			# Slope profile
-			self.Saxes.plot(self.d_all, self.slp_all,  color="0", ls="None", marker="o", ms=1)
-			self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
+			for n in np.arange(len(self.CHs)-1):
+				plotcolor = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+				C = random.choice(plotcolor)
+				# Set the Profiles
+				# Elevation profile
+				self.Eaxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_z(), color=C, ls="-", c="0.3", lw=1)
+				self.Eaxes.set_xlim(xmin=0, xmax=max(self.d_all))
+				# Chi profile
+				self.Caxes.plot(self.CHs[n].get_chi(), self.CHs[n].get_z(), color=C, ls="-", c="0.3", lw=1)
+				self.Caxes.set_xlim(xmin=min(self.chi_all), xmax=max(self.chi_all))
+				# Ksn profile
+				self.Kaxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_ksn(),  color=C, ls="None", marker=".", ms=1)
+				self.Kaxes.set_xlim(xmin=0, xmax=max(self.d_all))
+				# Slope profile
+				self.Saxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_slope(),  color=C, ls="None", marker=".", ms=1)
+				self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
 
 			# Show the profiles
 			self.draw_graph()
@@ -555,6 +557,7 @@ class TopopyProfiler:
 			self.dockwidget.GoButton.setEnabled(False)
 			self.dockwidget.GoSpinBox.setEnabled(False)
 			self.dockwidget.PrevButton.setEnabled(False)
+			self.dockwidget.KnickButton.setEnabled(False)	
 			
 			self.Ecanvas.mpl_disconnect(self.Epoint)
 			self.Ccanvas.mpl_disconnect(self.Cpoint)
