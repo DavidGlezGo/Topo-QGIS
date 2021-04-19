@@ -107,6 +107,26 @@
         </widget>
        </item>
        <item>
+        <widget class="QLabel" name="NcLabelValue">
+         <property name="minimumSize">
+          <size>
+           <width>10</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>8</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -368,52 +388,6 @@
        </widget>
       </item>
       <item>
-       <widget class="Line" name="line_6">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="NcLabel">
-        <property name="minimumSize">
-         <size>
-          <width>97</width>
-          <height>23</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>9</width>
-          <height>23</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Number of channels:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="NcLabelValue">
-        <property name="minimumSize">
-         <size>
-          <width>10</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="Line" name="line_7">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
        <spacer name="horizontalSpacer_4">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -442,7 +416,7 @@
       <item>
        <widget class="QPushButton" name="RegButton">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="text">
          <string>Regression</string>
@@ -452,7 +426,7 @@
       <item>
        <widget class="QPushButton" name="DamButton">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="text">
          <string>Remove dam</string>
