@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 /***************************************************************************
  TopopyProfiler
 								 A QGIS plugin
@@ -20,7 +20,7 @@
  *	(at your option) any later version.									*
  *																		 *
  ***************************************************************************/
-"""
+'''
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtWidgets import QAction, QFileDialog
@@ -44,22 +44,21 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import numpy as np
-import random
-
+import ogr, osr
 
 from .qgs_topopy_provider import QgsTopopyProvider
 
 class TopopyProfiler:
-	"""QGIS Plugin Implementation."""
+	'''QGIS Plugin Implementation.'''
 
 	def __init__(self, iface):
-		"""Constructor.
+		'''Constructor.
 
 		:param iface: An interface instance that will be passed to this class
 			which provides the hook by which you can manipulate the QGIS
 			application at run time.
 		:type iface: QgsInterface
-		"""
+		'''
 		# Save reference to the QGIS interface
 		self.iface = iface
 
@@ -85,7 +84,7 @@ class TopopyProfiler:
 		self.toolbar = self.iface.addToolBar(u'Topopy')
 		self.toolbar.setObjectName(u'Topopy')
 
-		# print "** INITIALIZING TopopyProfiler"
+		# print '** INITIALIZING TopopyProfiler'
 
 		self.pluginIsActive = False
 		self.first_start = None
@@ -136,6 +135,8 @@ class TopopyProfiler:
 		self.dockwidget.KnickButton.setEnabled(False)
 		self.dockwidget.RegButton.setEnabled(False)
 		self.dockwidget.DamButton.setEnabled(False)	
+		self.dockwidget.SaveButton.setEnabled(False)	
+		self.dockwidget.SaveComboBox.setEnabled(False)	
 		
 		# Set the properties of the temporary layer
 		self.rubberband = QgsRubberBand(self.iface.mapCanvas(), False)
@@ -153,17 +154,18 @@ class TopopyProfiler:
 		self.rubberknick.setColor(QColor(Qt.red))
 
 		# Delete any temporary layer drawn
+		self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 		self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
 		self.rubberband.reset(QgsWkbTypes.LineGeometry)
 		
 ####-----------------------------------------------------------------------------####
-		"""caja de herramientas"""
+		'''caja de herramientas'''
 		self.provider = None
 ####-----------------------------------------------------------------------------####		
 
 	# noinspection PyMethodMayBeStatic
 	def tr(self, message):
-		"""Get the translation for a string using Qt translation API.
+		'''Get the translation for a string using Qt translation API.
 
 		We implement this ourselves since we do not inherit QObject.
 
@@ -172,7 +174,7 @@ class TopopyProfiler:
 
 		:returns: Translated version of message.
 		:rtype: QString
-		"""
+		'''
 		# noinspection PyTypeChecker,PyArgumentList,PyCallByClass
 		return QCoreApplication.translate('TopopyProfiler', message)
 
@@ -186,7 +188,7 @@ class TopopyProfiler:
 		status_tip=None,
 		whats_this=None,
 		parent=None):
-		"""Add a toolbar icon to the toolbar.
+		'''Add a toolbar icon to the toolbar.
 
 		:param icon_path: Path to the icon for this action. Can be a resource
 			path (e.g. ':/plugins/foo/bar.png') or a normal file system path.
@@ -223,7 +225,7 @@ class TopopyProfiler:
 		:returns: The action that was created. Note that the action is also
 			added to self.actions list.
 		:rtype: QAction
-		"""
+		'''
 
 		icon = QIcon(icon_path)
 		action = QAction(icon, text, parent)
@@ -249,11 +251,11 @@ class TopopyProfiler:
 		return action
 
 	def initGui(self):
-		"""Create the menu entries and toolbar icons inside the QGIS GUI."""
+		'''Create the menu entries and toolbar icons inside the QGIS GUI.'''
 
 		icon_path = ':/plugins/topopy_profiler/icon.png'
 ####-----------------------------------------------------------------------------####	
-	###caja de herramientas"""
+	###caja de herramientas'''
 		self.initProcessing()
 ####-----------------------------------------------------------------------------####	
 		self.add_action(
@@ -267,9 +269,9 @@ class TopopyProfiler:
 	#--------------------------------------------------------------------------
 
 	def onClosePlugin(self):
-		"""Cleanup necessary items here when plugin dockwidget is closed"""
+		'''Cleanup necessary items here when plugin dockwidget is closed'''
 
-		#print "** CLOSING TopopyProfiler"
+		#print '** CLOSING TopopyProfiler'
 
 		# disconnects
 		self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
@@ -292,6 +294,10 @@ class TopopyProfiler:
 		self.dockwidget.KnickButton.setEnabled(False)	
 		self.dockwidget.RegButton.setEnabled(False)
 		self.dockwidget.DamButton.setEnabled(False)		
+		self.dockwidget.SaveButton.setEnabled(False)	
+		self.dockwidget.SaveComboBox.setEnabled(False)	
+		
+		self.dockwidget.NcLabelValue.setText('')
 		
 		self.all = False
 		self.knick = False
@@ -301,13 +307,14 @@ class TopopyProfiler:
 		self.graph = 0
 		self.rubberband.reset(QgsWkbTypes.LineGeometry)
 		self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
-		self.iface.mainWindow().statusBar().showMessage( "" )
+		self.rubberknick.reset(QgsWkbTypes.PointGeometry)
+		self.iface.mainWindow().statusBar().showMessage( '' )
 
 
 	def unload(self):
-		"""Removes the plugin menu item and icon from QGIS GUI."""
+		'''Removes the plugin menu item and icon from QGIS GUI.'''
 
-		#print "** UNLOAD TopopyProfiler"
+		#print '** UNLOAD TopopyProfiler'
 
 		for action in self.actions:
 			self.iface.removePluginMenu(
@@ -322,18 +329,18 @@ class TopopyProfiler:
 		self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
 		self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 ####-----------------------------------------------------------------------------####	
-	###caja de herramientas"""
+	###caja de herramientas'''
 		QgsApplication.processingRegistry().removeProvider(self.provider)
 ####-----------------------------------------------------------------------------####			
 
 	def run(self):
-		"""Run method that loads and starts the plugin"""
+		'''Run method that loads and starts the plugin'''
 
 		
 		if not self.pluginIsActive:
 			self.pluginIsActive = True
 
-			#print "** STARTING TopopyProfiler"
+			#print '** STARTING TopopyProfiler'
 
 			# dockwidget may not exist if:
 			#	first run of plugin
@@ -361,7 +368,7 @@ class TopopyProfiler:
 		self.dockwidget.DamButton.clicked.connect(self.remove_dam)		
 		
 		# Help message at the bottom of the QGis window
-		self.iface.mainWindow().statusBar().showMessage( "Set CHANNELS file (.npy), then click on \"READ\" to display the profiles." )
+		self.iface.mainWindow().statusBar().showMessage( 'Set CHANNELS file (.npy), then click on \'READ\' to display the profiles.' )
 
 		self.all = False
 		self.knick = False
@@ -376,7 +383,7 @@ class TopopyProfiler:
 			
 		
 	def calculate_channels(self):
-		""" Calculate all elements of topopy """
+		''' Calculate all elements of topopy '''
 		filename = self.dockwidget.FileLineEdit.text()
 		if filename:
 
@@ -397,8 +404,10 @@ class TopopyProfiler:
 			self.dockwidget.KnickButton.setEnabled(True)
 			self.dockwidget.RegButton.setEnabled(True)
 			self.dockwidget.DamButton.setEnabled(True)
+			self.dockwidget.SaveButton.setEnabled(True)	
+			self.dockwidget.SaveComboBox.setEnabled(True)	
 			
-			self.iface.mainWindow().statusBar().showMessage( "" )
+			self.iface.mainWindow().statusBar().showMessage( '' )
 
 			
 			self.d_all = []
@@ -408,7 +417,7 @@ class TopopyProfiler:
 			self.slp_all = []
 		
 	def change_graph(self):
-		""" Change the plotted channel """
+		''' Change the plotted channel '''
 		
 		# Clear the profiles
 		self.clear_graph()
@@ -445,17 +454,17 @@ class TopopyProfiler:
 		self.show_knickpoints(self.channel)			
 
 	def next_graph(self):
-		""" Select the next channel """
+		''' Select the next channel '''
 		
 		# Advance to the next channel
 		if self.graph < (len(self.CHs)-1):
 			self.graph += 1
 		
-		# Disable the "Next>" button if the channel is the last
+		# Disable the 'Next>' button if the channel is the last
 		if self.graph == (len(self.CHs)-1):
 			self.dockwidget.NextButton.setEnabled(False)
 		
-		# Enable the "<Prev" button if the channel is the second 
+		# Enable the '<Prev' button if the channel is the second 
 		if self.graph == 1:
 			self.dockwidget.PrevButton.setEnabled(True)
 		
@@ -464,17 +473,17 @@ class TopopyProfiler:
 		self.dockwidget.lineEdit.setText(str(self.graph))	
 		
 	def prev_graph(self):
-		""" Select the previous channel """
+		''' Select the previous channel '''
 		
 		# Go back to the previous channel
 		if self.graph > 0:
 			self.graph -= 1
 			
-		# Disable the "<Prev" button if the channel is the first
+		# Disable the '<Prev' button if the channel is the first
 		if self.graph == 0:
 			self.dockwidget.PrevButton.setEnabled(False)
 			
-		# Enable the "Next>" button if the channel is the penultimate
+		# Enable the 'Next>' button if the channel is the penultimate
 		if self.graph == (len(self.CHs)-2):
 			self.dockwidget.NextButton.setEnabled(True)
 
@@ -483,18 +492,18 @@ class TopopyProfiler:
 		self.dockwidget.lineEdit.setText(str(self.graph))
 		
 	def go_graph(self):
-		""" Select a specific channel """
+		''' Select a specific channel '''
 		
 		# Select the channel number 	
 		self.graph = self.dockwidget.GoSpinBox.value() - 1
 	
-		# Disable the "Next>" button if the channel is the last, else enable it
+		# Disable the 'Next>' button if the channel is the last, else enable it
 		if self.graph == (len(self.CHs)-1):
 			self.dockwidget.NextButton.setEnabled(False)
 		else:
 			self.dockwidget.NextButton.setEnabled(True)
 			
-		# Disable the "<Prev" button if the channel is the first, else enable it
+		# Disable the '<Prev' button if the channel is the first, else enable it
 		if self.graph == 0:
 			self.dockwidget.PrevButton.setEnabled(False)
 		else:
@@ -510,20 +519,20 @@ class TopopyProfiler:
 	def single_channels(self):
 		# Set the Profiles
 		# Elevation profile
-		self.Eaxes.plot(self.channel.get_d(head=False), self.channel.get_z(), color="r", ls="-", c="0.3", lw=1)
+		self.Eaxes.plot(self.channel.get_d(head=False), self.channel.get_z(), color='r', ls='-', c='0.3', lw=1)
 		self.Eaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))
 		# Chi profile
-		self.Caxes.plot(self.channel.get_chi(), self.channel.get_z(), color="r", ls="-", c="0.3", lw=1)
+		self.Caxes.plot(self.channel.get_chi(), self.channel.get_z(), color='r', ls='-', c='0.3', lw=1)
 		self.Caxes.set_xlim(xmin=min(self.channel.get_chi()), xmax=max(self.channel.get_chi()))
 		# Ksn profile
-		self.Kaxes.plot(self.channel.get_d(head=False), self.channel.get_ksn(),  color="0", ls="None", marker=".", ms=1)
+		self.Kaxes.plot(self.channel.get_d(head=False), self.channel.get_ksn(),  color='0', ls='None', marker='.', ms=1)
 		self.Kaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))
 		# Slope profile
-		self.Saxes.plot(self.channel.get_d(head=False), self.channel.get_slope(),  color="0", ls="None", marker=".", ms=1)
+		self.Saxes.plot(self.channel.get_d(head=False), self.channel.get_slope(),  color='0', ls='None', marker='.', ms=1)
 		self.Saxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))		
 
 	def all_channels(self):
-		"""Show all channels"""
+		'''Show all channels'''
 		
 		if 	self.all == False:
 			self.all = True
@@ -543,16 +552,16 @@ class TopopyProfiler:
 				C = random.choice(plotcolor)
 				# Set the Profiles
 				# Elevation profile
-				self.Eaxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_z(), color=C, ls="-", c="0.3", lw=1)
+				self.Eaxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_z(), color=C, ls='-', c='0.3', lw=1)
 				self.Eaxes.set_xlim(xmin=0, xmax=max(self.d_all))
 				# Chi profile
-				self.Caxes.plot(self.CHs[n].get_chi(), self.CHs[n].get_z(), color=C, ls="-", c="0.3", lw=1)
+				self.Caxes.plot(self.CHs[n].get_chi(), self.CHs[n].get_z(), color=C, ls='-', c='0.3', lw=1)
 				self.Caxes.set_xlim(xmin=min(self.chi_all), xmax=max(self.chi_all))
 				# Ksn profile
-				self.Kaxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_ksn(),  color=C, ls="None", marker=".", ms=1)
+				self.Kaxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_ksn(),  color=C, ls='None', marker='.', ms=1)
 				self.Kaxes.set_xlim(xmin=0, xmax=max(self.d_all))
 				# Slope profile
-				self.Saxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_slope(),  color=C, ls="None", marker=".", ms=1)
+				self.Saxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_slope(),  color=C, ls='None', marker='.', ms=1)
 				self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
 
 			# Show the profiles
@@ -596,7 +605,7 @@ class TopopyProfiler:
 			self.dockwidget.DamButton.setEnabled(True)
 
 	def clear_graph(self):
-		""" Clear all graphs """
+		''' Clear all graphs '''
 		
 		self.Eaxes.clear()
 		self.Caxes.clear()
@@ -604,16 +613,16 @@ class TopopyProfiler:
 		self.Saxes.clear()
 	
 	def draw_graph(self):
-		""" Draw all graphs """
+		''' Draw all graphs '''
 		
-		self.Eaxes.set_xlabel("Distance to mouth [m]")
-		self.Eaxes.set_ylabel("Elevation [m]")
-		self.Caxes.set_xlabel("χ [m]")		
-		self.Caxes.set_ylabel("Elevation [m]")
-		self.Kaxes.set_xlabel("Distance to mouth [m]")
-		self.Kaxes.set_ylabel("ksn")
-		self.Saxes.set_xlabel("Distance to mouth [m]")
-		self.Saxes.set_ylabel("Slope [%]")
+		self.Eaxes.set_xlabel('Distance to mouth [m]')
+		self.Eaxes.set_ylabel('Elevation [m]')
+		self.Caxes.set_xlabel('χ [m]')		
+		self.Caxes.set_ylabel('Elevation [m]')
+		self.Kaxes.set_xlabel('Distance to mouth [m]')
+		self.Kaxes.set_ylabel('ksn')
+		self.Saxes.set_xlabel('Distance to mouth [m]')
+		self.Saxes.set_ylabel('Slope [%]')
 			
 		self.Ecanvas.draw()
 		self.Ccanvas.draw()
@@ -623,16 +632,16 @@ class TopopyProfiler:
 
 
 ####-----------------------------------------------------------------------------####	
-	"""caja de herramientas"""
+	'''caja de herramientas'''
 	def initProcessing(self):
-		"""Init Processing provider for QGIS >= 3.8."""
+		'''Init Processing provider for QGIS >= 3.8.'''
 		self.provider = QgsTopopyProvider()
 		QgsApplication.processingRegistry().addProvider(self.provider)
 ####-----------------------------------------------------------------------------####
 
 
 	def select_output_file(self):
-		filename, _filter = QFileDialog.getOpenFileName(self.dockwidget, "Select Channels file ","", 'NPY files (*.npy)')
+		filename, _filter = QFileDialog.getOpenFileName(self.dockwidget, 'Select Channels file ','', 'NPY files (*.npy)')
 		self.dockwidget.FileLineEdit.setText(filename)
 
 
@@ -718,22 +727,15 @@ class TopopyProfiler:
 			
 			self.dockwidget.lineEdit_2.setText(str(list(self.channel.get_d(head=False))[kp])+ '/' + str(kp))	
 			
-			self.Eaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_z()[kp], color="b", ls="None", marker="d", ms=10)
+			self.Eaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
 			# Chi profile
-			self.Caxes.plot(self.channel.get_chi()[kp], self.channel.get_z()[kp], color="b", ls="None", marker="d", ms=10)
+			self.Caxes.plot(self.channel.get_chi()[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
 			# Ksn profile
-			self.Kaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_ksn()[kp],  color="r", ls="None", marker="d", ms=10)
+			self.Kaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_ksn()[kp],  color='r', ls='None', marker='X', ms=10)
 			# # Slope profile
-			self.Saxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_slope()[kp],  color="r", ls="None", marker="d", ms=10)
+			self.Saxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_slope()[kp],  color='r', ls='None', marker='X', ms=10)
 		self.draw_graph()
 
-	def save (self):
-	
-		filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, "Select Channels file ","", 'NPY files (*.npy)')
-		if filename:
-			with open(filename, 'wb') as f:
-				np.save(f, self.CHs)
-			
 	
 	def check_knickpoints (self):
 	
@@ -746,8 +748,10 @@ class TopopyProfiler:
 			self.Sknick = self.Scanvas.mpl_connect('button_press_event', self.D_knpoint)
 			
 			self.dockwidget.AllCheckBox.setEnabled(False)
-			
-			self.dockwidget.lineEdit_3.setText(str(self.knick))				
+			self.dockwidget.SaveButton.setEnabled(False)	
+			self.dockwidget.SaveComboBox.setEnabled(False)				
+
+			self.iface.mainWindow().statusBar().showMessage( 'Add Points: Left click / Remove Points: Rigth Click' )		
 
 			self.dockwidget.RegButton.setText('<')
 			self.dockwidget.RegButton.clicked.connect(self.knick_left)
@@ -763,8 +767,10 @@ class TopopyProfiler:
 			self.Scanvas.mpl_disconnect(self.Sknick)	
 			
 			self.dockwidget.AllCheckBox.setEnabled(True)
-			
-			self.dockwidget.lineEdit_3.setText(str(self.knick))		
+			self.dockwidget.SaveButton.setEnabled(True)	
+			self.dockwidget.SaveComboBox.setEnabled(True)	
+
+			self.iface.mainWindow().statusBar().showMessage( '' )	
 			
 			self.dockwidget.RegButton.setText('Regression')			
 			self.dockwidget.RegButton.clicked.connect(self.regression)
@@ -801,4 +807,53 @@ class TopopyProfiler:
 		self.dockwidget.lineEdit.setText('REGRESSION in development')			
 	
 	def remove_dam(self):
-		self.dockwidget.lineEdit.setText('REMOVE DAM in development')			
+		self.dockwidget.lineEdit.setText('REMOVE DAM in development')		
+
+
+	def save (self):
+		format = self.dockwidget.SaveComboBox.currentIndex()
+		if format == 0:
+			filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, 'Save Channels','', 'NPY files (*.npy)')
+			if filename:
+				with open(filename, 'wb') as f:
+					np.save(f, self.CHs)
+		if format == 1:
+			filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, 'Save Channel','', 'DAT files (*.dat)')
+			if filename:
+				self.CHs[self.graph].save(filename)
+		if format == 2:
+			filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, 'Save Knickpoints','', 'ESRI Shapefile (*.shp)')
+			if filename:
+				channel = self.CHs[self.graph]
+				# Create shapefile
+				driver = ogr.GetDriverByName('ESRI Shapefile')
+				dataset = driver.CreateDataSource(filename)
+				sp = osr.SpatialReference()
+				sp.ImportFromWkt(channel._proj)
+				layer = dataset.CreateLayer('Knickpoints', sp, ogr.wkbPoint)
+
+				self.dockwidget.lineEdit_2.setText(str(channel._proj))
+				
+				# Add fields
+				campos = ['id', 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope']
+				tipos = [0, 2, 2, 2, 2, 2, 2]
+				id = 0
+				for n in range(len(campos)):
+					layer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))
+				for n in channel._knickpoints:
+					id +=1
+					feat = ogr.Feature(layer.GetLayerDefn())
+					feat.SetField('id', int(id))
+					feat.SetField('z', float(channel._zx[n]))
+					feat.SetField('chi', float(channel._chi[n]))
+					feat.SetField('ksn', float(channel._ksn[n]))
+					feat.SetField('rksn', float(channel._R2ksn[n]))
+					feat.SetField('slope', float(channel._slp[n]))
+					feat.SetField('rslope', float(channel._R2slp[n]))
+					
+					# Create geometry
+					point = ogr.Geometry(ogr.wkbPoint)
+					point.AddPoint(channel.get_xy()[n][0], channel.get_xy()[n][1])
+					feat.SetGeometry(point)			
+				
+					self.dockwidget.lineEdit.setText(str(channel.get_xy()[n][0])+ '/' +str(channel.get_xy()[n][1])+ '/' +str(n))	

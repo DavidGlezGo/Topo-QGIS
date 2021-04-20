@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>917</width>
-    <height>525</height>
+    <width>724</width>
+    <height>608</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -140,9 +140,59 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="SaveButton">
+        <widget class="QLabel" name="label">
+         <property name="minimumSize">
+          <size>
+           <width>60</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="text">
-          <string>Save as</string>
+          <string>Export Data</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="SaveComboBox">
+         <property name="minimumSize">
+          <size>
+           <width>120</width>
+           <height>0</height>
+          </size>
+         </property>
+         <item>
+          <property name="text">
+           <string>All Channels (.npy)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>This channel  (.dat)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Knickpoints (.shp)</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="SaveButton">
+         <property name="minimumSize">
+          <size>
+           <width>45</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>45</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Save</string>
          </property>
         </widget>
        </item>
@@ -177,7 +227,7 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>700</width>
+              <width>0</width>
               <height>250</height>
              </size>
             </property>

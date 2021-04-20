@@ -113,7 +113,7 @@ class Stream_POI(QgsProcessingAlgorithm):
                 feat = ogr.Feature(layer.GetLayerDefn())
                 feat.SetGeometry(point)
                 value = kind.replace("s","")
-                feat.SetField("Type", kind)
+                feat.SetField("Type", value)
                 layer.CreateFeature(feat) 
                 
         if points == 0:        
