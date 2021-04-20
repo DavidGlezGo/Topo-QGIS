@@ -99,8 +99,6 @@ class TopopyProfiler:
 		self.Kcanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
 		self.Scanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
 		
-		
-		
 		self.Eaxes = self.Ecanvas.figure.add_subplot()
 		self.Caxes = self.Ccanvas.figure.add_subplot()
 		self.Kaxes = self.Kcanvas.figure.add_subplot()
@@ -126,18 +124,7 @@ class TopopyProfiler:
 		self.Kcanvas.setCursor(self.cursor)	
 		self.Scanvas.setCursor(self.cursor)	
 		
-		# Selection buttons disabled 
-		self.dockwidget.NextButton.setEnabled(False)
-		self.dockwidget.PrevButton.setEnabled(False)
-		self.dockwidget.GoButton.setEnabled(False)
-		self.dockwidget.GoSpinBox.setEnabled(False)
-		self.dockwidget.AllCheckBox.setEnabled(False)
-		self.dockwidget.KnickButton.setEnabled(False)
-		self.dockwidget.RegButton.setEnabled(False)
-		self.dockwidget.DamButton.setEnabled(False)	
-		self.dockwidget.SaveButton.setEnabled(False)	
-		self.dockwidget.SaveComboBox.setEnabled(False)	
-		
+
 		# Set the properties of the temporary layer
 		self.rubberband = QgsRubberBand(self.iface.mapCanvas(), False)
 		self.rubberband.setWidth(2)
@@ -296,15 +283,30 @@ class TopopyProfiler:
 		self.dockwidget.DamButton.setEnabled(False)		
 		self.dockwidget.SaveButton.setEnabled(False)	
 		self.dockwidget.SaveComboBox.setEnabled(False)	
-		
+
+		if self.dockwidget.KnickButton.isChecked()==True:		
+
+			self.dockwidget.RegButton.clicked.disconnect(self.knick_left)
+			self.dockwidget.DamButton.clicked.disconnect(self.knick_right)
+			self.dockwidget.RegButton.clicked.connect(self.regression)	
+			self.dockwidget.DamButton.clicked.connect(self.remove_dam)
+			self.Ecanvas.mpl_disconnect(self.Eknick)
+			self.Ccanvas.mpl_disconnect(self.Cknick)
+			self.Kcanvas.mpl_disconnect(self.Kknick)
+			self.Scanvas.mpl_disconnect(self.Sknick)
+			self.dockwidget.KnickButton.setChecked(False)			
+			self.dockwidget.RegButton.setText('Regression')			
+			self.dockwidget.DamButton.setText('Remove Dam')		
+			self.dockwidget.FileLineEdit.setEnabled(True)			
+			self.dockwidget.PathButton.setEnabled(True)	
+			self.dockwidget.AddButton.setEnabled(True)	
+	
 		self.dockwidget.NcLabelValue.setText('')
-		
-		self.all = False
-		self.knick = False
-		
+	
 		self.clear_graph()
 		self.draw_graph()
 		self.graph = 0
+		
 		self.rubberband.reset(QgsWkbTypes.LineGeometry)
 		self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
 		self.rubberknick.reset(QgsWkbTypes.PointGeometry)
@@ -370,9 +372,6 @@ class TopopyProfiler:
 		# Help message at the bottom of the QGis window
 		self.iface.mainWindow().statusBar().showMessage( 'Set CHANNELS file (.npy), then click on \'READ\' to display the profiles.' )
 
-		self.all = False
-		self.knick = False
-		
 		# show the dockwidget
 		# TODO: fix to allow choice of dock location
 		self.iface.addDockWidget(Qt.BottomDockWidgetArea, self.dockwidget)
@@ -380,8 +379,8 @@ class TopopyProfiler:
 		if self.first_start == True:
 			self.first_start = False
 			self.dockwidget.PathButton.clicked.connect(self.select_output_file)
-			
 		
+	
 	def calculate_channels(self):
 		''' Calculate all elements of topopy '''
 		filename = self.dockwidget.FileLineEdit.text()
@@ -397,24 +396,24 @@ class TopopyProfiler:
 			# Turn on the buttons and display the number of channels 
 			self.dockwidget.GoSpinBox.setMaximum(int(len(self.CHs)))
 			self.dockwidget.NcLabelValue.setText(str(len(self.CHs))+ ' Channels loaded')
-			self.dockwidget.NextButton.setEnabled(True)
-			self.dockwidget.GoButton.setEnabled(True)
-			self.dockwidget.GoSpinBox.setEnabled(True)
 			self.dockwidget.AllCheckBox.setEnabled(True)
 			self.dockwidget.KnickButton.setEnabled(True)
 			self.dockwidget.RegButton.setEnabled(True)
 			self.dockwidget.DamButton.setEnabled(True)
 			self.dockwidget.SaveButton.setEnabled(True)	
 			self.dockwidget.SaveComboBox.setEnabled(True)	
-			
+
+			if len(self.CHs)>1:
+				self.dockwidget.NextButton.setEnabled(True)	
+				self.dockwidget.GoButton.setEnabled(True)
+				self.dockwidget.GoSpinBox.setEnabled(True)
+				
 			self.iface.mainWindow().statusBar().showMessage( '' )
 
 			
 			self.d_all = []
-			self.z_all = []
 			self.chi_all = []
-			self.ksn_all = []
-			self.slp_all = []
+
 		
 	def change_graph(self):
 		''' Change the plotted channel '''
@@ -514,8 +513,6 @@ class TopopyProfiler:
 		# Change channel	
 		self.change_graph()
 
-
-
 	def single_channels(self):
 		# Set the Profiles
 		# Elevation profile
@@ -534,8 +531,7 @@ class TopopyProfiler:
 	def all_channels(self):
 		'''Show all channels'''
 		
-		if 	self.all == False:
-			self.all = True
+		if self.dockwidget.AllCheckBox.isChecked()==True:
 			# Clear the profiles
 			self.clear_graph()
 			
@@ -543,10 +539,8 @@ class TopopyProfiler:
 				for n in np.arange(len(self.CHs)-1):
 
 					self.d_all += list(self.CHs[n].get_d(head=False))
-					self.z_all += list(self.CHs[n].get_z())
-					self.ksn_all += list(self.CHs[n].get_ksn())
 					self.chi_all += list(self.CHs[n].get_chi())
-					self.slp_all += list(self.CHs[n].get_slope())
+
 			for n in np.arange(len(self.CHs)-1):
 				plotcolor = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 				C = random.choice(plotcolor)
@@ -566,7 +560,6 @@ class TopopyProfiler:
 
 			# Show the profiles
 			self.draw_graph()
-			self.dockwidget.lineEdit_3.setText(str(self.all))
 			self.rubberband.reset(QgsWkbTypes.LineGeometry)
 
 			self.dockwidget.PrevButton.setEnabled(False)
@@ -588,11 +581,9 @@ class TopopyProfiler:
 			
 		
 			
-		else:
-			self.all = False
+		elif self.dockwidget.AllCheckBox.isChecked()==True:
 			# Change channel
 			self.change_graph()
-			self.dockwidget.lineEdit_3.setText(str(self.all))
 			if self.graph < (len(self.CHs)-1):
 				self.dockwidget.NextButton.setEnabled(True)
 			if self.graph > 0:
@@ -686,9 +677,9 @@ class TopopyProfiler:
 				
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 
-			self.show_knickpoints(self.channel)		
+			self.show_knickpoints(self.channel)	
 
-
+		self.knick_buttons()		
 
 	def C_knpoint(self, event):
 		# get the x and y pixel coords
@@ -711,11 +702,10 @@ class TopopyProfiler:
 
 				
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
-			
-		
-
+	
 			self.show_knickpoints(self.channel)	
-
+			
+		self.knick_buttons()
 
 	def show_knickpoints(self, channel):
 		kpoints = channel._knickpoints		
@@ -738,9 +728,8 @@ class TopopyProfiler:
 
 	
 	def check_knickpoints (self):
-	
-		if 	self.knick == False:
-			self.knick = True
+
+		if self.dockwidget.KnickButton.isChecked()==True:
 			
 			self.Eknick = self.Ecanvas.mpl_connect('button_press_event', self.D_knpoint)
 			self.Cknick = self.Ccanvas.mpl_connect('button_press_event', self.C_knpoint)
@@ -750,17 +739,27 @@ class TopopyProfiler:
 			self.dockwidget.AllCheckBox.setEnabled(False)
 			self.dockwidget.SaveButton.setEnabled(False)	
 			self.dockwidget.SaveComboBox.setEnabled(False)				
-
+			self.dockwidget.FileLineEdit.setEnabled(False)	
+			self.dockwidget.PathButton.setEnabled(False)	
+			self.dockwidget.AddButton.setEnabled(False)	
+			
 			self.iface.mainWindow().statusBar().showMessage( 'Add Points: Left click / Remove Points: Rigth Click' )		
+
+			try:
+				self.dockwidget.RegButton.clicked.disconnect(self.regression)
+				self.dockwidget.DamButton.clicked.disconnect(self.remove_dam)
+			except:
+				None
 
 			self.dockwidget.RegButton.setText('<')
 			self.dockwidget.RegButton.clicked.connect(self.knick_left)
 			self.dockwidget.DamButton.setText('>')
 			self.dockwidget.DamButton.clicked.connect(self.knick_right)
+
+			self.knick_buttons()
 		
-		else:
-			self.knick = False
-			
+		if self.dockwidget.KnickButton.isChecked()==False:
+		
 			self.Ecanvas.mpl_disconnect(self.Eknick)
 			self.Ccanvas.mpl_disconnect(self.Cknick)
 			self.Kcanvas.mpl_disconnect(self.Kknick)
@@ -768,32 +767,43 @@ class TopopyProfiler:
 			
 			self.dockwidget.AllCheckBox.setEnabled(True)
 			self.dockwidget.SaveButton.setEnabled(True)	
-			self.dockwidget.SaveComboBox.setEnabled(True)	
+			self.dockwidget.SaveComboBox.setEnabled(True)
+			self.dockwidget.FileLineEdit.setEnabled(True)	
+			self.dockwidget.PathButton.setEnabled(True)	
+			self.dockwidget.AddButton.setEnabled(True)	
+			self.dockwidget.RegButton.setEnabled(True)
+			self.dockwidget.DamButton.setEnabled(True)			
 
 			self.iface.mainWindow().statusBar().showMessage( '' )	
 			
+			self.dockwidget.RegButton.clicked.disconnect(self.knick_left)
+			self.dockwidget.DamButton.clicked.disconnect(self.knick_right)
+
 			self.dockwidget.RegButton.setText('Regression')			
 			self.dockwidget.RegButton.clicked.connect(self.regression)
 			self.dockwidget.DamButton.setText('Remove Dam')			
 			self.dockwidget.DamButton.clicked.connect(self.remove_dam)
+
 			
 	def knick_left(self):
 		
 		if len(self.CHs[self.graph]._knickpoints) > 0:
 			i = self.CHs[self.graph]._knickpoints[-1]
-			if i > 0:
-				i2 = i+1
-				self.CHs[self.graph]._knickpoints.pop()
-				self.CHs[self.graph]._knickpoints.append(i2)
-				self.rubberknick.reset(QgsWkbTypes.PointGeometry)
-				
-				self.dockwidget.lineEdit.setText(str(self.CHs[self.graph]._knickpoints))				
+
+			i2 = i+1
+			self.CHs[self.graph]._knickpoints.pop()
+			self.CHs[self.graph]._knickpoints.append(i2)
+			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 			
-				self.show_knickpoints(self.channel)		
+			self.dockwidget.lineEdit.setText(str(self.CHs[self.graph]._knickpoints))				
+		
+			self.show_knickpoints(self.channel)		
+			self.knick_buttons()
 
 	def knick_right(self):
-		i = self.CHs[self.graph]._knickpoints[-1]
-		if i > 0:
+		if len(self.CHs[self.graph]._knickpoints) > 0:
+			i = self.CHs[self.graph]._knickpoints[-1]
+
 			i2 = i-1
 			self.CHs[self.graph]._knickpoints.pop()
 			self.CHs[self.graph]._knickpoints.append(i2)
@@ -801,13 +811,30 @@ class TopopyProfiler:
 			
 			self.dockwidget.lineEdit.setText(str(self.CHs[self.graph]._knickpoints))				
 		
-			self.show_knickpoints(self.channel)	
-	
+			self.show_knickpoints(self.channel)
+			self.knick_buttons()				
+
+	def knick_buttons(self):
+		if len(self.channel._knickpoints) == 0:
+			self.dockwidget.RegButton.setEnabled(False)
+			self.dockwidget.DamButton.setEnabled(False)
+		else:
+			if self.channel._knickpoints[-1] == 0:
+				self.dockwidget.RegButton.setEnabled(True)
+				self.dockwidget.DamButton.setEnabled(False)
+
+			elif self.channel._knickpoints[-1] == (len(self.channel._zx)-1):
+				self.dockwidget.RegButton.setEnabled(False)
+				self.dockwidget.DamButton.setEnabled(True)	
+			else:			
+				self.dockwidget.RegButton.setEnabled(True)
+				self.dockwidget.DamButton.setEnabled(True)
+		
 	def regression(self):
-		self.dockwidget.lineEdit.setText('REGRESSION in development')			
+		self.iface.mainWindow().statusBar().showMessage( 'REGRESSION in development')			
 	
 	def remove_dam(self):
-		self.dockwidget.lineEdit.setText('REMOVE DAM in development')		
+		self.iface.mainWindow().statusBar().showMessage( 'REMOVE DAM in development')		
 
 
 	def save (self):
