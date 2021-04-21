@@ -525,7 +525,7 @@ class TopopyProfiler:
 		self.Kaxes.plot(self.channel.get_d(head=False), self.channel.get_ksn(),  color='0', ls='None', marker='.', ms=1)
 		self.Kaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))
 		# Slope profile
-		self.Saxes.plot(self.channel.get_d(head=False), self.channel.get_slope(),  color='0', ls='None', marker='.', ms=1)
+		self.Saxes.plot(self.channel.get_d(head=False), self.channel.get_slope()*100,  color='0', ls='None', marker='.', ms=1)
 		self.Saxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))		
 
 	def all_channels(self):
@@ -555,7 +555,7 @@ class TopopyProfiler:
 				self.Kaxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_ksn(),  color=C, ls='None', marker='.', ms=1)
 				self.Kaxes.set_xlim(xmin=0, xmax=max(self.d_all))
 				# Slope profile
-				self.Saxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_slope(),  color=C, ls='None', marker='.', ms=1)
+				self.Saxes.plot(self.CHs[n].get_d(head=False), self.CHs[n].get_slope()*100,  color=C, ls='None', marker='.', ms=1)
 				self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
 
 			# Show the profiles
@@ -723,7 +723,7 @@ class TopopyProfiler:
 			# Ksn profile
 			self.Kaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_ksn()[kp],  color='r', ls='None', marker='X', ms=10)
 			# # Slope profile
-			self.Saxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_slope()[kp],  color='r', ls='None', marker='X', ms=10)
+			self.Saxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_slope()[kp]*100,  color='r', ls='None', marker='X', ms=10)
 		self.draw_graph()
 
 	
@@ -881,10 +881,10 @@ class TopopyProfiler:
 					feat.SetField('rslope', float(channel._R2slp[n]))
 					
 					# Create geometry
-					point = ogr.Geometry(ogr.wkbPoint)
-					point.AddPoint(channel.get_xy()[n][0], channel.get_xy()[n][1])
-					feat.SetGeometry(point)			
-				
+					geom = ogr.Geometry(ogr.wkbPoint)
+					geom.AddPoint(channel.get_xy()[n][0], channel.get_xy()[n][1])
+					feat.SetGeometry(geom)			
+					layer.CreateFeature(feat)				
 					self.dockwidget.lineEdit.setText(str(channel.get_xy()[n][0])+ '/' +str(channel.get_xy()[n][1])+ '/' +str(n))	
 					
 		if format == 3:	
