@@ -43,6 +43,7 @@ from matplotlib.widgets import Button
 import matplotlib
 import matplotlib.pyplot as plt
 
+import random
 import numpy as np
 import ogr, osr
 
@@ -116,13 +117,6 @@ class TopopyProfiler:
 
 		# Set first channel to plot 
 		self.graph = 0
-		
-		# Show the cursor as a cross 
-		self.cursor = QCursor(Qt.CrossCursor)
-		self.Ecanvas.setCursor(self.cursor)		
-		self.Ccanvas.setCursor(self.cursor)	
-		self.Kcanvas.setCursor(self.cursor)	
-		self.Scanvas.setCursor(self.cursor)	
 		
 
 		# Set the properties of the temporary layer
@@ -360,8 +354,8 @@ class TopopyProfiler:
 		
 		# Button actions
 		self.dockwidget.AddButton.clicked.connect(self.calculate_channels)
-		self.dockwidget.NextButton.clicked.connect(self.next_graph)
-		self.dockwidget.PrevButton.clicked.connect(self.prev_graph)
+		self.dockwidget.NextButton.clicked.connect(lambda:self.next_prev(1))
+		self.dockwidget.PrevButton.clicked.connect(lambda:self.next_prev(0))
 		self.dockwidget.GoButton.clicked.connect(self.go_graph)
 		self.dockwidget.AllCheckBox.clicked.connect(self.all_channels)
 		self.dockwidget.KnickButton.clicked.connect(self.check_knickpoints)
@@ -379,8 +373,7 @@ class TopopyProfiler:
 		if self.first_start == True:
 			self.first_start = False
 			self.dockwidget.PathButton.clicked.connect(self.select_output_file)
-		
-	
+
 	def calculate_channels(self):
 		''' Calculate all elements of topopy '''
 		filename = self.dockwidget.FileLineEdit.text()
@@ -396,7 +389,7 @@ class TopopyProfiler:
 			# Turn on the buttons and display the number of channels 
 			self.dockwidget.GoSpinBox.setMaximum(int(len(self.CHs)))
 			self.dockwidget.NcLabelValue.setText(str(len(self.CHs))+ ' Channels loaded')
-			self.dockwidget.AllCheckBox.setEnabled(True)
+
 			self.dockwidget.KnickButton.setEnabled(True)
 			self.dockwidget.RegButton.setEnabled(True)
 			self.dockwidget.DamButton.setEnabled(True)
@@ -407,6 +400,12 @@ class TopopyProfiler:
 				self.dockwidget.NextButton.setEnabled(True)	
 				self.dockwidget.GoButton.setEnabled(True)
 				self.dockwidget.GoSpinBox.setEnabled(True)
+				self.dockwidget.AllCheckBox.setEnabled(True)
+			else:
+				self.dockwidget.NextButton.setEnabled(False)	
+				self.dockwidget.GoButton.setEnabled(False)
+				self.dockwidget.GoSpinBox.setEnabled(False)
+				self.dockwidget.AllCheckBox.setEnabled(False)
 				
 			self.iface.mainWindow().statusBar().showMessage( '' )
 
@@ -414,7 +413,6 @@ class TopopyProfiler:
 			self.d_all = []
 			self.chi_all = []
 
-		
 	def change_graph(self):
 		''' Change the plotted channel '''
 		
@@ -434,10 +432,19 @@ class TopopyProfiler:
 		self.Kpoint = self.Kcanvas.mpl_connect('motion_notify_event', self.D_move)
 		self.Spoint = self.Scanvas.mpl_connect('motion_notify_event', self.D_move)
 
+		# W = self.dockwidget.ElevProf.geometry().width()
+		# H = self.dockwidget.ElevProf.geometry().height()
+
 		# self.Ecanvas.figure.tight_layout(pad=2, w_pad=0, h_pad=0)			
 		# self.Ccanvas.figure.tight_layout(pad=2, w_pad=0, h_pad=0)	
 		# self.Kcanvas.figure.tight_layout(pad=2, w_pad=0, h_pad=0)	
 		# self.Scanvas.figure.tight_layout(pad=2, w_pad=0, h_pad=0)	
+
+		# self.Ecanvas.resize(W,H)
+		# self.Ccanvas.resize(W,H)
+		# self.Kcanvas.resize(W,H)
+		# self.Scanvas.resize(W,H)	
+		
 		
 		# Show the profiles
 		self.draw_graph()
@@ -452,43 +459,38 @@ class TopopyProfiler:
 
 		self.show_knickpoints(self.channel)			
 
-	def next_graph(self):
-		''' Select the next channel '''
+	def next_prev(self, direction):
+		''' Select the next or previuos channel '''
 		
-		# Advance to the next channel
-		if self.graph < (len(self.CHs)-1):
-			self.graph += 1
-		
-		# Disable the 'Next>' button if the channel is the last
-		if self.graph == (len(self.CHs)-1):
-			self.dockwidget.NextButton.setEnabled(False)
-		
-		# Enable the '<Prev' button if the channel is the second 
-		if self.graph == 1:
-			self.dockwidget.PrevButton.setEnabled(True)
-		
+		if direction == 0:
+			# Go back to the previous channel
+			if self.graph > 0:
+				self.graph -= 1
+				
+			# Disable the '<Prev' button if the channel is the first
+			if self.graph == 0:
+				self.dockwidget.PrevButton.setEnabled(False)
+				
+			# Enable the 'Next>' button if the channel is the penultimate
+			if self.graph == (len(self.CHs)-2):
+				self.dockwidget.NextButton.setEnabled(True)
+
+		if direction == 1:
+			# Advance to the next channel
+			if self.graph < (len(self.CHs)-1):
+				self.graph += 1
+			
+			# Disable the 'Next>' button if the channel is the last
+			if self.graph == (len(self.CHs)-1):
+				self.dockwidget.NextButton.setEnabled(False)
+			
+			# Enable the '<Prev' button if the channel is the second 
+			if self.graph == 1:
+				self.dockwidget.PrevButton.setEnabled(True)
+			
 		# Change channel
 		self.change_graph()
 		self.dockwidget.lineEdit.setText(str(self.graph))	
-		
-	def prev_graph(self):
-		''' Select the previous channel '''
-		
-		# Go back to the previous channel
-		if self.graph > 0:
-			self.graph -= 1
-			
-		# Disable the '<Prev' button if the channel is the first
-		if self.graph == 0:
-			self.dockwidget.PrevButton.setEnabled(False)
-			
-		# Enable the 'Next>' button if the channel is the penultimate
-		if self.graph == (len(self.CHs)-2):
-			self.dockwidget.NextButton.setEnabled(True)
-
-		# Change channel
-		self.change_graph()
-		self.dockwidget.lineEdit.setText(str(self.graph))
 		
 	def go_graph(self):
 		''' Select a specific channel '''
@@ -508,8 +510,6 @@ class TopopyProfiler:
 		else:
 			self.dockwidget.PrevButton.setEnabled(True)
 			
-
-		
 		# Change channel	
 		self.change_graph()
 
@@ -581,7 +581,7 @@ class TopopyProfiler:
 			
 		
 			
-		elif self.dockwidget.AllCheckBox.isChecked()==True:
+		elif self.dockwidget.AllCheckBox.isChecked()==False:
 			# Change channel
 			self.change_graph()
 			if self.graph < (len(self.CHs)-1):
@@ -844,10 +844,12 @@ class TopopyProfiler:
 			if filename:
 				with open(filename, 'wb') as f:
 					np.save(f, self.CHs)
+					
 		if format == 1:
 			filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, 'Save Channel','', 'DAT files (*.dat)')
 			if filename:
 				self.CHs[self.graph].save(filename)
+				
 		if format == 2:
 			filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, 'Save Knickpoints','', 'ESRI Shapefile (*.shp)')
 			if filename:
@@ -884,3 +886,22 @@ class TopopyProfiler:
 					feat.SetGeometry(point)			
 				
 					self.dockwidget.lineEdit.setText(str(channel.get_xy()[n][0])+ '/' +str(channel.get_xy()[n][1])+ '/' +str(n))	
+					
+		if format == 3:	
+			directory = QFileDialog.getExistingDirectory(self.dockwidget, 'Save Graphics','')	
+			if directory:
+				self.dockwidget.lineEdit.setText(str(directory)+'/elevation.svg')
+				
+				ElevFig = self.Ecanvas.figure
+				ChiFig = self.Ccanvas.figure
+				KsnFig = self.Kcanvas.figure
+				SlpFig = self.Scanvas.figure
+
+				ElevFig.savefig(str(directory)+'/Elev.svg')
+				ChiFig.savefig(str(directory)+'/Chi.svg')
+				KsnFig.savefig(str(directory)+'/Ksn.svg')
+				SlpFig.savefig(str(directory)+'/Slope.svg')
+				ElevFig.savefig(str(directory)+'/Elev.png')
+				ChiFig.savefig(str(directory)+'/Chi.png')
+				KsnFig.savefig(str(directory)+'/Ksn.png')
+				SlpFig.savefig(str(directory)+'/Slope.png')

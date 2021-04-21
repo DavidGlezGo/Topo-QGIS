@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>724</width>
-    <height>608</height>
+    <height>414</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -178,6 +178,11 @@
            <string>Knickpoints (.shp)</string>
           </property>
          </item>
+         <item>
+          <property name="text">
+           <string>Graphics (.jpg)</string>
+          </property>
+         </item>
         </widget>
        </item>
        <item>
@@ -236,6 +241,9 @@
               <width>0</width>
               <height>250</height>
              </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>CrossCursor</cursorShape>
             </property>
             <property name="autoFillBackground">
              <bool>false</bool>
