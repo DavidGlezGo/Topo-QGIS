@@ -280,9 +280,15 @@ class TopopyProfiler:
 		self.dockwidget.SaveComboBox.setEnabled(False)	
 
 		if self.dockwidget.KnickButton.isChecked()==True:		
-
-			self.dockwidget.RegButton.clicked.disconnect(self.knick_left)
-			self.dockwidget.DamButton.clicked.disconnect(self.knick_right)
+			try:
+				self.dockwidget.RegButton.clicked.disconnect(lambda:self.knick_move('L'))
+			except:
+				None
+			try:
+				self.dockwidget.DamButton.clicked.disconnect(lambda:self.knick_move('R'))
+			except:
+				None
+				
 			self.dockwidget.RegButton.clicked.connect(self.regression)	
 			self.dockwidget.DamButton.clicked.connect(self.remove_dam)
 			self.Ecanvas.mpl_disconnect(self.Eknick)
@@ -304,9 +310,12 @@ class TopopyProfiler:
 			self.dockwidget.PathButton.setEnabled(True)	
 			self.dockwidget.AddButton.setEnabled(True)	
 			self.Ecanvas.mpl_disconnect(self.Edam)
-			self.Ccanvas.mpl_disconnect(self.C_dam)
+			self.Ccanvas.mpl_disconnect(self.Cdam)
 			self.dockwidget.DamButton.setChecked(False)		
-	
+		
+		if self.dockwidget.RegButton.isChecked()==True:
+			self.dockwidget.RegButton.setChecked(False)	
+			
 		self.dockwidget.NcLabelValue.setText('')
 	
 		self.clear_graph()
@@ -386,6 +395,20 @@ class TopopyProfiler:
 			self.first_start = False
 			self.dockwidget.PathButton.clicked.connect(self.select_output_file)
 
+
+####-----------------------------------------------------------------------------####	
+	'''caja de herramientas'''
+	def initProcessing(self):
+		'''Init Processing provider for QGIS >= 3.8.'''
+		self.provider = QgsTopopyProvider()
+		QgsApplication.processingRegistry().addProvider(self.provider)
+####-----------------------------------------------------------------------------####
+
+
+	def select_output_file(self):
+		filename, _filter = QFileDialog.getOpenFileName(self.dockwidget, 'Select Channels file ','', 'NPY files (*.npy)')
+		self.dockwidget.FileLineEdit.setText(filename)
+
 	def calculate_channels(self):
 		''' Calculate all elements of topopy '''
 		filename = self.dockwidget.FileLineEdit.text()
@@ -439,10 +462,10 @@ class TopopyProfiler:
 		# Update the channel selector 
 		self.dockwidget.GoSpinBox.setValue(int(self.graph)+1)
 
-		self.Epoint = self.Ecanvas.mpl_connect('motion_notify_event', self.D_move)
-		self.Cpoint = self.Ccanvas.mpl_connect('motion_notify_event', self.C_move)
-		self.Kpoint = self.Kcanvas.mpl_connect('motion_notify_event', self.D_move)
-		self.Spoint = self.Scanvas.mpl_connect('motion_notify_event', self.D_move)
+		self.Epoint = self.Ecanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
+		self.Cpoint = self.Ccanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'C'))
+		self.Kpoint = self.Kcanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
+		self.Spoint = self.Scanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
 
 		# W = self.dockwidget.ElevProf.geometry().width()
 		# H = self.dockwidget.ElevProf.geometry().height()
@@ -632,121 +655,24 @@ class TopopyProfiler:
 		self.Kcanvas.draw()
 		self.Scanvas.draw()
 
-
-
-####-----------------------------------------------------------------------------####	
-	'''caja de herramientas'''
-	def initProcessing(self):
-		'''Init Processing provider for QGIS >= 3.8.'''
-		self.provider = QgsTopopyProvider()
-		QgsApplication.processingRegistry().addProvider(self.provider)
-####-----------------------------------------------------------------------------####
-
-
-	def select_output_file(self):
-		filename, _filter = QFileDialog.getOpenFileName(self.dockwidget, 'Select Channels file ','', 'NPY files (*.npy)')
-		self.dockwidget.FileLineEdit.setText(filename)
-
-
-	def D_move(self, event):
-		# get the x and y pixel coords
-		x, y = event.x, event.y
+	def move(self, event, graphic):
 		if event.inaxes:
-			self.dockwidget.lineEdit_2.setText('data coords %f %f' % (event.xdata, event.ydata))
 			self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
-			i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+			if graphic == 'D':
+				i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+			if graphic == 'C':
+				i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
 			xy = self.channel.get_xy()[i]
 			self.rubberpoint.addPoint(QgsPointXY(xy[0], xy[1]))	  
-	
-	def C_move(self, event):
-		# get the x and y pixel coords
-		x, y = event.x, event.y
-		if event.inaxes:
 
-			self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
-			i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
-			xy = self.channel.get_xy()[i]
-			self.rubberpoint.addPoint(QgsPointXY(xy[0], xy[1]))	
-			self.dockwidget.lineEdit_2.setText('data coords %f %f' % (event.xdata, event.ydata)+ '/' + str(i))
-	
-	def D_knpoint(self, event):
-		# get the x and y pixel coords
-		x, y = event.x, event.y
-		
-		if event.inaxes:
-
-			if event.button == 1:
-				i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
-				self.CHs[self.graph]._knickpoints.append(i)
-
-			if event.button == 3:
-				i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
-				self.dockwidget.lineEdit_3.setText(str(i))	
-				
-				i = np.abs(list(self.CHs[self.graph]._knickpoints) - i).argmin()
-
-				self.CHs[self.graph]._knickpoints.pop(i)
-				
-			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
-
-			self.show_knickpoints(self.channel)	
-
-		self.knick_buttons()		
-
-	def C_knpoint(self, event):
-		# get the x and y pixel coords
-		x, y = event.x, event.y
-		
-		if event.inaxes:
-
-			if event.button == 1:
-				
-				i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
-				self.CHs[self.graph]._knickpoints.append(i)
-
-			if event.button == 3:
-				i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
-				self.dockwidget.lineEdit_3.setText(str(i))	
-				
-				i = np.abs(list(self.CHs[self.graph]._knickpoints) - i).argmin()
-
-				self.CHs[self.graph]._knickpoints.pop(i)
-
-				
-			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
-	
-			self.show_knickpoints(self.channel)	
-			
-		self.knick_buttons()
-
-	def show_knickpoints(self, channel):
-		kpoints = channel._knickpoints		
-		self.clear_graph()
-		self.single_channels()
-		for kp in kpoints:
-			xy = channel.get_xy()[kp]
-			self.rubberknick.addPoint(QgsPointXY(xy[0], xy[1]))		
-			
-			self.dockwidget.lineEdit_2.setText(str(list(self.channel.get_d(head=False))[kp])+ '/' + str(kp))	
-			
-			self.Eaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
-			# Chi profile
-			self.Caxes.plot(self.channel.get_chi()[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
-			# Ksn profile
-			self.Kaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_ksn()[kp],  color='r', ls='None', marker='X', ms=10)
-			# # Slope profile
-			self.Saxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_slope()[kp]*100,  color='r', ls='None', marker='X', ms=10)
-		self.draw_graph()
-
-	
 	def check_knickpoints (self):
 
 		if self.dockwidget.KnickButton.isChecked()==True:
 			
-			self.Eknick = self.Ecanvas.mpl_connect('button_press_event', self.D_knpoint)
-			self.Cknick = self.Ccanvas.mpl_connect('button_press_event', self.C_knpoint)
-			self.Kknick = self.Kcanvas.mpl_connect('button_press_event', self.D_knpoint)
-			self.Sknick = self.Scanvas.mpl_connect('button_press_event', self.D_knpoint)
+			self.Eknick = self.Ecanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'D'))
+			self.Cknick = self.Ccanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'C'))
+			self.Kknick = self.Kcanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'D'))
+			self.Sknick = self.Scanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'D'))
 			
 			self.dockwidget.AllCheckBox.setEnabled(False)
 			self.dockwidget.SaveButton.setEnabled(False)	
@@ -767,9 +693,9 @@ class TopopyProfiler:
 				None
 
 			self.dockwidget.RegButton.setText('<')
-			self.dockwidget.RegButton.clicked.connect(self.knick_left)
+			self.dockwidget.RegButton.clicked.connect(lambda:self.knick_move('L'))
 			self.dockwidget.DamButton.setText('>')
-			self.dockwidget.DamButton.clicked.connect(self.knick_right)
+			self.dockwidget.DamButton.clicked.connect(lambda:self.knick_move('R'))
 
 			self.knick_buttons()
 		
@@ -793,22 +719,51 @@ class TopopyProfiler:
 			self.dockwidget.DamButton.setCheckable(True)			
 
 			self.iface.mainWindow().statusBar().showMessage( '' )	
-			
-			self.dockwidget.RegButton.clicked.disconnect(self.knick_left)
-			self.dockwidget.DamButton.clicked.disconnect(self.knick_right)
+			try:
+				self.dockwidget.RegButton.clicked.disconnect(lambda:self.knick_move('L'))
+			except:
+				None
+			try:
+				self.dockwidget.DamButton.clicked.disconnect(lambda:self.knick_move('R'))
+			except:
+				None
 
 			self.dockwidget.RegButton.setText('Regression')			
 			self.dockwidget.RegButton.clicked.connect(self.regression)
 			self.dockwidget.DamButton.setText('Remove Dam')			
 			self.dockwidget.DamButton.clicked.connect(self.remove_dam)
 
-			
-	def knick_left(self):
+	def knpoint(self, event, graphic):
+		if event.inaxes:
+			if graphic == 'D':
+				i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+			if graphic == 'C':
+				i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()		
+				
+			if event.button == 1:
+	
+				self.CHs[self.graph]._knickpoints.append(i)
+
+			if event.button == 3:
+				if len(self.CHs[self.graph]._knickpoints)>0:
+					i = np.abs(list(self.CHs[self.graph]._knickpoints) - i).argmin()
+
+					self.CHs[self.graph]._knickpoints.pop(i)
+				
+			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
+
+			self.show_knickpoints(self.channel)	
+
+		self.knick_buttons()		
+
+	def knick_move(self, move):
 		
 		if len(self.CHs[self.graph]._knickpoints) > 0:
 			i = self.CHs[self.graph]._knickpoints[-1]
-
-			i2 = i+1
+			if move == 'L':
+				i2 = i+1
+			if move == 'R':
+				i2 = i-1			
 			self.CHs[self.graph]._knickpoints.pop()
 			self.CHs[self.graph]._knickpoints.append(i2)
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
@@ -818,19 +773,24 @@ class TopopyProfiler:
 			self.show_knickpoints(self.channel)		
 			self.knick_buttons()
 
-	def knick_right(self):
-		if len(self.CHs[self.graph]._knickpoints) > 0:
-			i = self.CHs[self.graph]._knickpoints[-1]
-
-			i2 = i-1
-			self.CHs[self.graph]._knickpoints.pop()
-			self.CHs[self.graph]._knickpoints.append(i2)
-			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
+	def show_knickpoints(self, channel):
+		kpoints = channel._knickpoints		
+		self.clear_graph()
+		self.single_channels()
+		for kp in kpoints:
+			xy = channel.get_xy()[kp]
+			self.rubberknick.addPoint(QgsPointXY(xy[0], xy[1]))		
 			
-			self.dockwidget.lineEdit.setText(str(self.CHs[self.graph]._knickpoints))				
-		
-			self.show_knickpoints(self.channel)
-			self.knick_buttons()				
+			self.dockwidget.lineEdit_2.setText(str(list(self.channel.get_d(head=False))[kp])+ '/' + str(kp))	
+			
+			self.Eaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
+			# Chi profile
+			self.Caxes.plot(self.channel.get_chi()[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
+			# Ksn profile
+			self.Kaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_ksn()[kp],  color='r', ls='None', marker='X', ms=10)
+			# # Slope profile
+			self.Saxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_slope()[kp]*100,  color='r', ls='None', marker='X', ms=10)
+		self.draw_graph()
 
 	def knick_buttons(self):
 		if len(self.channel._knickpoints) == 0:
@@ -847,7 +807,7 @@ class TopopyProfiler:
 			else:			
 				self.dockwidget.RegButton.setEnabled(True)
 				self.dockwidget.DamButton.setEnabled(True)
-		
+
 	def regression(self):
 		if self.dockwidget.RegButton.isChecked():	
 			self.dockwidget.KnickButton.setEnabled(False)
@@ -871,8 +831,8 @@ class TopopyProfiler:
 			self.dockwidget.AddButton.setEnabled(False)	
 			self.dockwidget.RegButton.setEnabled(False)
 			self.Data = [-1,-1,-1,-1,-1,-1]
-			self.Edam = self.Ecanvas.mpl_connect('button_press_event', self.D_dam)
-			self.Cdam = self.Ccanvas.mpl_connect('button_press_event', self.C_dam)
+			self.Edam = self.Ecanvas.mpl_connect('button_press_event', lambda event: self.dam(event, 'D'))
+			self.Cdam = self.Ccanvas.mpl_connect('button_press_event', lambda event: self.dam(event, 'C'))
 			self.dockwidget.lineEdit.setText(str(self.Data))
 			self.iface.mainWindow().statusBar().showMessage( 'Left Point: Left click / Rigth Point: Rigth Click')	
 		if self.dockwidget.DamButton.isChecked() == False:	
@@ -886,32 +846,32 @@ class TopopyProfiler:
 			self.dockwidget.RegButton.setEnabled(True)
 			self.show_knickpoints(self.channel)
 			self.Ecanvas.mpl_disconnect(self.Edam)
-			self.Ccanvas.mpl_disconnect(self.C_dam)
-			self.iface.mainWindow().statusBar().showMessage( '')	
-			
-	
+			self.Ccanvas.mpl_disconnect(self.Cdam)
+			self.iface.mainWindow().statusBar().showMessage('')	
 
-	def D_dam(self, event):
-
-		# get the x and y pixel coords
-		x, y = event.x, event.y
+	def dam(self, event, graphic):
 		if event.inaxes:
 	
 			if event.button == 1:	
-				I = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+				if graphic == 'D':
+					I = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+				if graphic == 'C':
+					I = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()			
 				if type(self.Data[3]) == list:
 					if I >= self.Data[3][0]:
 						self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
 						self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
 						self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
 				else:
-
 					self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
 					self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
 					self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
 				
 			if event.button == 3:
-				D = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+				if graphic == 'D':
+					D = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+				if graphic == 'C':
+					D = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()		
 				if type(self.Data[2]) == list:
 					if D <= self.Data[2][0]:
 						self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])
@@ -928,9 +888,9 @@ class TopopyProfiler:
 			Data = np.array(self.Data)
 			self.dockwidget.lineEdit.setText(str(Data[1,0]-1))
 
-			Zfit = np.polyfit(Data[:,0], Data[:,1] ,3)
+			Zfit = np.polyfit(Data[:,0], Data[:,1] ,1)
 			Zline = np.poly1d(Zfit)
-			Cfit = np.polyfit(Data[:,0], Data[:,2] ,3)
+			Cfit = np.polyfit(Data[:,0], Data[:,2] ,1)
 			Cline = np.poly1d(Cfit)
 			Kfit = np.polyfit(Data[:,0], Data[:,3] ,1)
 			Kline = np.poly1d(Kfit)
@@ -946,62 +906,6 @@ class TopopyProfiler:
 			self.show_dam()			
 			self.Data = [-1,-1,-1,-1,-1,-1]
 
-	def C_dam(self, event):
-
-		# get the x and y pixel coords
-		x, y = event.x, event.y
-		if event.inaxes:
-	
-			if event.button == 1:	
-				I = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
-				if type(self.Data[3]) == list:
-					if I >= self.Data[3][0]:
-						self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
-						self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
-						self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
-				else:
-
-					self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
-					self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
-					self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
-				
-			if event.button == 3:
-				D = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
-				if type(self.Data[2]) == list:
-					if D <= self.Data[2][0]:
-						self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])
-						self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1]])
-						self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2]])
-
-				else:
-					self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])	
-					self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1]])
-					self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2]])
-					
-		self.show_dam()
-		if (-1 in self.Data) == False:
-			Data = np.array(self.Data)
-			self.dockwidget.lineEdit.setText(str(Data[1,0]-1))
-
-			Zfit = np.polyfit(Data[:,0], Data[:,1] ,3)
-			Zline = np.poly1d(Zfit)
-			Cfit = np.polyfit(Data[:,0], Data[:,2] ,3)
-			Cline = np.poly1d(Cfit)
-			Kfit = np.polyfit(Data[:,0], Data[:,3] ,1)
-			Kline = np.poly1d(Kfit)
-			Sfit = np.polyfit(Data[:,0], Data[:,4] ,1)
-			Sline = np.poly1d(Sfit)
-			
-			for n in np.arange((int(Data[3,0]+1)),(int(Data[2,0]-1))):
-				self.CHs[self.graph]._zx[n] = Zline(n)
-				self.CHs[self.graph]._chi[n] = Cline(n)
-				self.CHs[self.graph]._ksn[n] = Kline(n)
-				self.CHs[self.graph]._slp[n] = Sline(n)
-
-			self.show_dam()			
-			self.Data = [-1,-1,-1,-1,-1,-1]
-		
-		
 	def show_dam(self):
 		Data = self.Data
 		dam = []
@@ -1020,7 +924,7 @@ class TopopyProfiler:
 			# # Slope profile
 			self.Saxes.plot(self.channel.get_d(head=False)[d], self.channel.get_slope()[d]*100,  color='r', ls='None', marker='x', ms=10)
 		self.draw_graph()			
-			
+
 	def save (self):
 		format = self.dockwidget.SaveComboBox.currentIndex()
 		if format == 0:
@@ -1089,3 +993,4 @@ class TopopyProfiler:
 				ChiFig.savefig(str(directory)+'/Chi.png')
 				KsnFig.savefig(str(directory)+'/Ksn.png')
 				SlpFig.savefig(str(directory)+'/Slope.png')
+				
