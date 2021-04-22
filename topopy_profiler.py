@@ -45,6 +45,7 @@ import matplotlib.pyplot as plt
 
 import random
 import numpy as np
+from scipy import interpolate
 import ogr, osr
 
 from .qgs_topopy_provider import QgsTopopyProvider
@@ -294,6 +295,17 @@ class TopopyProfiler:
 			self.dockwidget.FileLineEdit.setEnabled(True)			
 			self.dockwidget.PathButton.setEnabled(True)	
 			self.dockwidget.AddButton.setEnabled(True)	
+
+			self.dockwidget.RegButton.setCheckable(True)
+			self.dockwidget.DamButton.setCheckable(True)	
+		
+		if self.dockwidget.DamButton.isChecked()==True:
+			self.dockwidget.FileLineEdit.setEnabled(True)	
+			self.dockwidget.PathButton.setEnabled(True)	
+			self.dockwidget.AddButton.setEnabled(True)	
+			self.Ecanvas.mpl_disconnect(self.Edam)
+			self.Ccanvas.mpl_disconnect(self.C_dam)
+			self.dockwidget.DamButton.setChecked(False)		
 	
 		self.dockwidget.NcLabelValue.setText('')
 	
@@ -742,6 +754,9 @@ class TopopyProfiler:
 			self.dockwidget.FileLineEdit.setEnabled(False)	
 			self.dockwidget.PathButton.setEnabled(False)	
 			self.dockwidget.AddButton.setEnabled(False)	
+
+			self.dockwidget.RegButton.setCheckable(False)
+			self.dockwidget.DamButton.setCheckable(False)
 			
 			self.iface.mainWindow().statusBar().showMessage( 'Add Points: Left click / Remove Points: Rigth Click' )		
 
@@ -772,7 +787,10 @@ class TopopyProfiler:
 			self.dockwidget.PathButton.setEnabled(True)	
 			self.dockwidget.AddButton.setEnabled(True)	
 			self.dockwidget.RegButton.setEnabled(True)
-			self.dockwidget.DamButton.setEnabled(True)			
+			self.dockwidget.DamButton.setEnabled(True)	
+
+			self.dockwidget.RegButton.setCheckable(True)
+			self.dockwidget.DamButton.setCheckable(True)			
 
 			self.iface.mainWindow().statusBar().showMessage( '' )	
 			
@@ -831,12 +849,178 @@ class TopopyProfiler:
 				self.dockwidget.DamButton.setEnabled(True)
 		
 	def regression(self):
+		if self.dockwidget.RegButton.isChecked():	
+			self.dockwidget.KnickButton.setEnabled(False)
+			self.dockwidget.DamButton.setEnabled(False)
+			
+		if not self.dockwidget.RegButton.isChecked():	
+			self.dockwidget.KnickButton.setEnabled(True)
+			self.dockwidget.DamButton.setEnabled(True)
+			
 		self.iface.mainWindow().statusBar().showMessage( 'REGRESSION in development')			
 	
 	def remove_dam(self):
-		self.iface.mainWindow().statusBar().showMessage( 'REMOVE DAM in development')		
+	
+		if self.dockwidget.DamButton.isChecked() == True:	
+			self.dockwidget.KnickButton.setEnabled(False)
+			self.dockwidget.AllCheckBox.setEnabled(False)
+			self.dockwidget.SaveButton.setEnabled(False)	
+			self.dockwidget.SaveComboBox.setEnabled(False)				
+			self.dockwidget.FileLineEdit.setEnabled(False)	
+			self.dockwidget.PathButton.setEnabled(False)	
+			self.dockwidget.AddButton.setEnabled(False)	
+			self.dockwidget.RegButton.setEnabled(False)
+			self.Data = [-1,-1,-1,-1,-1,-1]
+			self.Edam = self.Ecanvas.mpl_connect('button_press_event', self.D_dam)
+			self.Cdam = self.Ccanvas.mpl_connect('button_press_event', self.C_dam)
+			self.dockwidget.lineEdit.setText(str(self.Data))
+			self.iface.mainWindow().statusBar().showMessage( 'Left Point: Left click / Rigth Point: Rigth Click')	
+		if self.dockwidget.DamButton.isChecked() == False:	
+			self.dockwidget.KnickButton.setEnabled(True)
+			self.dockwidget.AllCheckBox.setEnabled(True)
+			self.dockwidget.SaveButton.setEnabled(True)	
+			self.dockwidget.SaveComboBox.setEnabled(True)
+			self.dockwidget.FileLineEdit.setEnabled(True)	
+			self.dockwidget.PathButton.setEnabled(True)	
+			self.dockwidget.AddButton.setEnabled(True)	
+			self.dockwidget.RegButton.setEnabled(True)
+			self.show_knickpoints(self.channel)
+			self.Ecanvas.mpl_disconnect(self.Edam)
+			self.Ccanvas.mpl_disconnect(self.C_dam)
+			self.iface.mainWindow().statusBar().showMessage( '')	
+			
+	
 
+	def D_dam(self, event):
 
+		# get the x and y pixel coords
+		x, y = event.x, event.y
+		if event.inaxes:
+	
+			if event.button == 1:	
+				I = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+				if type(self.Data[3]) == list:
+					if I >= self.Data[3][0]:
+						self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
+						self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
+						self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
+				else:
+
+					self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
+					self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
+					self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
+				
+			if event.button == 3:
+				D = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+				if type(self.Data[2]) == list:
+					if D <= self.Data[2][0]:
+						self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])
+						self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1]])
+						self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2]])
+
+				else:
+					self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])	
+					self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1]])
+					self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2]])
+					
+		self.show_dam()
+		if (-1 in self.Data) == False:
+			Data = np.array(self.Data)
+			self.dockwidget.lineEdit.setText(str(Data[1,0]-1))
+
+			Zfit = np.polyfit(Data[:,0], Data[:,1] ,3)
+			Zline = np.poly1d(Zfit)
+			Cfit = np.polyfit(Data[:,0], Data[:,2] ,3)
+			Cline = np.poly1d(Cfit)
+			Kfit = np.polyfit(Data[:,0], Data[:,3] ,1)
+			Kline = np.poly1d(Kfit)
+			Sfit = np.polyfit(Data[:,0], Data[:,4] ,1)
+			Sline = np.poly1d(Sfit)
+			
+			for n in np.arange((int(Data[3,0]+1)),(int(Data[2,0]-1))):
+				self.CHs[self.graph]._zx[n] = Zline(n)
+				self.CHs[self.graph]._chi[n] = Cline(n)
+				self.CHs[self.graph]._ksn[n] = Kline(n)
+				self.CHs[self.graph]._slp[n] = Sline(n)
+
+			self.show_dam()			
+			self.Data = [-1,-1,-1,-1,-1,-1]
+
+	def C_dam(self, event):
+
+		# get the x and y pixel coords
+		x, y = event.x, event.y
+		if event.inaxes:
+	
+			if event.button == 1:	
+				I = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
+				if type(self.Data[3]) == list:
+					if I >= self.Data[3][0]:
+						self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
+						self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
+						self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
+				else:
+
+					self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
+					self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
+					self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
+				
+			if event.button == 3:
+				D = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
+				if type(self.Data[2]) == list:
+					if D <= self.Data[2][0]:
+						self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])
+						self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1]])
+						self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2]])
+
+				else:
+					self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])	
+					self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1]])
+					self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2]])
+					
+		self.show_dam()
+		if (-1 in self.Data) == False:
+			Data = np.array(self.Data)
+			self.dockwidget.lineEdit.setText(str(Data[1,0]-1))
+
+			Zfit = np.polyfit(Data[:,0], Data[:,1] ,3)
+			Zline = np.poly1d(Zfit)
+			Cfit = np.polyfit(Data[:,0], Data[:,2] ,3)
+			Cline = np.poly1d(Cfit)
+			Kfit = np.polyfit(Data[:,0], Data[:,3] ,1)
+			Kline = np.poly1d(Kfit)
+			Sfit = np.polyfit(Data[:,0], Data[:,4] ,1)
+			Sline = np.poly1d(Sfit)
+			
+			for n in np.arange((int(Data[3,0]+1)),(int(Data[2,0]-1))):
+				self.CHs[self.graph]._zx[n] = Zline(n)
+				self.CHs[self.graph]._chi[n] = Cline(n)
+				self.CHs[self.graph]._ksn[n] = Kline(n)
+				self.CHs[self.graph]._slp[n] = Sline(n)
+
+			self.show_dam()			
+			self.Data = [-1,-1,-1,-1,-1,-1]
+		
+		
+	def show_dam(self):
+		Data = self.Data
+		dam = []
+		if type(Data[2]) == list:
+			dam.append(Data[2][0])
+		if type(Data[3]) == list:
+			dam.append(Data[3][0])
+		self.show_knickpoints(self.channel)
+		for d in dam:
+			
+			self.Eaxes.plot(self.channel.get_d(head=False)[d], self.channel.get_z()[d], color='b', ls='None', marker='|', ms=10)
+			# Chi profile
+			self.Caxes.plot(self.channel.get_chi()[d], self.channel.get_z()[d], color='b', ls='None', marker='|', ms=10)
+			# Ksn profile
+			self.Kaxes.plot(self.channel.get_d(head=False)[d], self.channel.get_ksn()[d],  color='r', ls='None', marker='x', ms=10)
+			# # Slope profile
+			self.Saxes.plot(self.channel.get_d(head=False)[d], self.channel.get_slope()[d]*100,  color='r', ls='None', marker='x', ms=10)
+		self.draw_graph()			
+			
 	def save (self):
 		format = self.dockwidget.SaveComboBox.currentIndex()
 		if format == 0:
