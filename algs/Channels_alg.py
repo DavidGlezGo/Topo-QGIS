@@ -55,7 +55,7 @@ class Get_Channels(QgsProcessingAlgorithm):
 		texto = """
 					This scrip saves channel information as Channel objects.
 					
-					Input Streams: polyline type layer of the streams to be saved.
+					Input Streams: polyline layer of the streams to be saved.
 
 					Input Network: .dat file with Network information.
 					

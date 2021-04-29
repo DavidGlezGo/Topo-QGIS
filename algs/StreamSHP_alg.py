@@ -52,7 +52,7 @@ class Streams2shp(QgsProcessingAlgorithm):
         texto = """
                     This script extract streams orderded by strahler or shreeve. Cell values will have a value acording with the order of the segment they belong.
                     
-                    Flow: Flow direccion raster.
+                    Flow: Flow accumulation raster.
 
                     Method: Select the method for calculating the stream order.
                     
@@ -72,7 +72,7 @@ class Streams2shp(QgsProcessingAlgorithm):
         Here we define the inputs and output of the algorithm, along
         with some other properties.
         """
-        self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_DEM,  self.tr("Filled DEM")))
+        self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_DEM,  self.tr("Flow Accumulation")))
         self.addParameter(QgsProcessingParameterBoolean(self.CON, "Segmented Streams", False))
         self.addParameter(QgsProcessingParameterVectorDestination(self.OUTPUT_SHP, self.tr("Streams")))
  

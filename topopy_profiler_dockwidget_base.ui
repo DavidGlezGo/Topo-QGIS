@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1004</width>
-    <height>525</height>
+    <width>906</width>
+    <height>421</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -56,7 +56,7 @@
         <widget class="QLineEdit" name="FileLineEdit">
          <property name="minimumSize">
           <size>
-           <width>250</width>
+           <width>70</width>
            <height>20</height>
           </size>
          </property>
@@ -192,7 +192,7 @@
          </property>
          <property name="minimumSize">
           <size>
-           <width>45</width>
+           <width>35</width>
            <height>0</height>
           </size>
          </property>
@@ -221,7 +221,7 @@
          <enum>QTabWidget::North</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>4</number>
         </property>
         <widget class="QWidget" name="ElevTab">
          <attribute name="title">
@@ -310,6 +310,109 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="MoreTab">
+         <attribute name="title">
+          <string>More</string>
+         </attribute>
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <widget class="QGroupBox" name="horizontalGroupBox">
+            <property name="title">
+             <string>Developing</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <item>
+              <widget class="QGroupBox" name="verticalGroupBox">
+               <property name="minimumSize">
+                <size>
+                 <width>250</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_3">
+                <item>
+                 <widget class="QGroupBox" name="verticalGroupBox">
+                  <property name="title">
+                   <string>Show in Layout</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="verticalLayout_4">
+                   <item>
+                    <widget class="QCheckBox" name="LayCursorCheckBox">
+                     <property name="text">
+                      <string>Cursor</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="LayStreamCheckBox">
+                     <property name="text">
+                      <string>Stream</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="LayKpCheckBox">
+                     <property name="text">
+                      <string>Knikpoints</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="GraphRegCheckBox">
+                     <property name="text">
+                      <string>Regression</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="AllCheckBox">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="text">
+                      <string>All Channels</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QTextBrowser" name="textBrowser"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
         <widget class="QWidget" name="tab">
          <attribute name="title">
           <string>Desarrollo</string>
@@ -366,7 +469,7 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>70</width>
+          <width>50</width>
           <height>23</height>
          </size>
         </property>
@@ -388,7 +491,7 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>70</width>
+          <width>50</width>
           <height>23</height>
          </size>
         </property>
@@ -443,7 +546,7 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>23</width>
           <height>23</height>
          </size>
         </property>
@@ -455,23 +558,6 @@
         </property>
         <property name="text">
          <string>Go</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="Line" name="line_5">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="AllCheckBox">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>All Channels</string>
         </property>
        </widget>
       </item>
@@ -493,6 +579,18 @@
         <property name="enabled">
          <bool>false</bool>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>75</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>90</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="text">
          <string>Knickpoint</string>
         </property>
@@ -509,6 +607,18 @@
         <property name="enabled">
          <bool>false</bool>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>75</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>90</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="text">
          <string>Regression</string>
         </property>
@@ -521,6 +631,18 @@
        <widget class="QPushButton" name="DamButton">
         <property name="enabled">
          <bool>false</bool>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>75</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>90</width>
+          <height>16777215</height>
+         </size>
         </property>
         <property name="text">
          <string>Remove dam</string>

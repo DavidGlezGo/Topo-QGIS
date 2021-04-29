@@ -54,7 +54,7 @@ class FlowDir(QgsProcessingAlgorithm):
                     
 					Show Messages: Show progress messages (useful for big rasters).
 					
-					Input DEM : Input pit-filled Digital Elevation Model (DEM).
+					Input Filled DEM : Input pit-filled Digital Elevation Model (DEM).
 
 					Output Flow: Output flow direction raster.
                     """
@@ -73,8 +73,8 @@ class FlowDir(QgsProcessingAlgorithm):
         with some other properties.
         """
         self.addParameter(QgsProcessingParameterBoolean(self.VERBOSE, "Show Messages", False))
-        self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_DEM,  self.tr("Input DEM")))
-        self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT_FD, "Output filled DEM", None, False))
+        self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_DEM,  self.tr("Input Filled DEM")))
+        self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT_FD, "FLow Direcction", None, False))
 
 
  

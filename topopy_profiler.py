@@ -278,7 +278,8 @@ class TopopyProfiler:
 		self.dockwidget.DamButton.setEnabled(False)		
 		self.dockwidget.SaveButton.setEnabled(False)	
 		self.dockwidget.SaveComboBox.setEnabled(False)	
-
+		self.dockwidget.verticalGroupBox.setEnabled(True)
+		
 		if self.dockwidget.KnickButton.isChecked()==True:		
 			try:
 				self.dockwidget.RegButton.clicked.disconnect(lambda:self.knick_move('L'))
@@ -383,6 +384,9 @@ class TopopyProfiler:
 		self.dockwidget.SaveButton.clicked.connect(self.save)
 		self.dockwidget.RegButton.clicked.connect(self.regression)	
 		self.dockwidget.DamButton.clicked.connect(self.remove_dam)		
+		self.dockwidget.LayCursorCheckBox.clicked.connect(lambda:self.lay_show('C'))		
+		self.dockwidget.LayStreamCheckBox.clicked.connect(lambda:self.lay_show('S'))	
+		self.dockwidget.LayKpCheckBox.clicked.connect(lambda:self.lay_show('K'))	
 		
 		# Help message at the bottom of the QGis window
 		self.iface.mainWindow().statusBar().showMessage( 'Set CHANNELS file (.npy), then click on \'READ\' to display the profiles.' )
@@ -441,7 +445,8 @@ class TopopyProfiler:
 				self.dockwidget.GoButton.setEnabled(False)
 				self.dockwidget.GoSpinBox.setEnabled(False)
 				self.dockwidget.AllCheckBox.setEnabled(False)
-				
+				self.dockwidget.AllCheckBox.setChecked(False)
+		
 			self.iface.mainWindow().statusBar().showMessage( '' )
 
 			
@@ -489,10 +494,9 @@ class TopopyProfiler:
 		self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
 		self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 		
-		for x, y in self.channel.get_xy():
-			self.rubberband.addPoint(QgsPointXY(x, y))		
-
-		self.show_knickpoints(self.channel)			
+		self.lay_show('C')	
+		self.lay_show('S')	
+		self.lay_show('K')	
 
 	def next_prev(self, direction):
 		''' Select the next or previuos channel '''
@@ -571,12 +575,12 @@ class TopopyProfiler:
 			self.clear_graph()
 			
 			if len(self.d_all) == 0:
-				for n in np.arange(len(self.CHs)-1):
+				for n in np.arange(len(self.CHs)):
 
 					self.d_all += list(self.CHs[n].get_d(head=False))
 					self.chi_all += list(self.CHs[n].get_chi())
 
-			for n in np.arange(len(self.CHs)-1):
+			for n in np.arange(len(self.CHs)):
 				plotcolor = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 				C = random.choice(plotcolor)
 				# Set the Profiles
@@ -656,14 +660,18 @@ class TopopyProfiler:
 		self.Scanvas.draw()
 
 	def move(self, event, graphic):
-		if event.inaxes:
-			self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
-			if graphic == 'D':
-				i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
-			if graphic == 'C':
-				i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
-			xy = self.channel.get_xy()[i]
-			self.rubberpoint.addPoint(QgsPointXY(xy[0], xy[1]))	  
+		
+		if self.dockwidget.LayCursorCheckBox.isChecked()==True:	
+			if event.inaxes:
+
+				if self.dockwidget.AllCheckBox.isChecked()==False:
+					self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
+					if graphic == 'D':
+						i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+					if graphic == 'C':
+						i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
+					xy = self.channel.get_xy()[i]
+					self.rubberpoint.addPoint(QgsPointXY(xy[0], xy[1]))	  
 
 	def check_knickpoints (self):
 
@@ -674,6 +682,7 @@ class TopopyProfiler:
 			self.Kknick = self.Kcanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'D'))
 			self.Sknick = self.Scanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'D'))
 			
+			self.dockwidget.verticalGroupBox.setEnabled(False)			
 			self.dockwidget.AllCheckBox.setEnabled(False)
 			self.dockwidget.SaveButton.setEnabled(False)	
 			self.dockwidget.SaveComboBox.setEnabled(False)				
@@ -705,7 +714,8 @@ class TopopyProfiler:
 			self.Ccanvas.mpl_disconnect(self.Cknick)
 			self.Kcanvas.mpl_disconnect(self.Kknick)
 			self.Scanvas.mpl_disconnect(self.Sknick)	
-			
+
+			self.dockwidget.verticalGroupBox.setEnabled(True)			
 			self.dockwidget.AllCheckBox.setEnabled(True)
 			self.dockwidget.SaveButton.setEnabled(True)	
 			self.dockwidget.SaveComboBox.setEnabled(True)
@@ -813,15 +823,64 @@ class TopopyProfiler:
 			self.dockwidget.KnickButton.setEnabled(False)
 			self.dockwidget.DamButton.setEnabled(False)
 			
+			# self.RData = [-1,-1]			
+			# self.CReg = self.Ccanvas.mpl_connect('button_press_event', self.reg)			
 		if not self.dockwidget.RegButton.isChecked():	
 			self.dockwidget.KnickButton.setEnabled(True)
 			self.dockwidget.DamButton.setEnabled(True)
+
+			# self.Ecanvas.mpl_disconnect(self.CReg)
 			
 		self.iface.mainWindow().statusBar().showMessage( 'REGRESSION in development')			
 	
+	# def reg(self, event):
+		# if event.inaxes:
+	
+			# if event.button == 1:
+				# self.RData[1] = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()	
+					
+			
+			# if event.button == 3:			
+				# self.RData[0] = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()	
+
+				
+		# if (-1 in self.RData) == False:		
+			# print(self.RData[0])
+			# print(self.RData[1])
+			# print(self.channel._zx[self.RData[0]:self.RData[1]])
+			# print(str(np.arange(self.RData[0],self.RData[1])))
+			# Sfit = np.polyfit(self.channel._zx[self.RData[0]:self.RData[1]], list(np.arange(self.RData[0],self.RData[1])) ,1)	
+			# R =list(Sfit)
+			# R.extend(self.RData)
+			# self.CHs[self.graph]._knickpoints.append(R)	
+			# print(self.CHs[self.graph]._knickpoints)
+			# self.RData = [-1,-1]
+			# # self.show_reg()
+		# print(self.RData)
+		
+	# def show_reg(self):
+		# self.clear_graph()
+		# print(0)
+		# self.single_channels()
+		# # Chi profile
+		# reg = self.CHs[self.graph]._knickpoints
+		# print(1)
+		
+		# for r in range(len(reg)):
+			# G = []
+			# for n in np.arange(reg[r][2], reg[r][3]):
+			
+				# G.append([(reg[r][0]+reg[r][1]*n),n])
+			# print(G)
+			# self.Caxes.plot(G[0], G[1], color='b', ls='None', marker='.', ms=10)		
+			# print(reg[r])
+			# self.draw_graph()
+		# print(2)
 	def remove_dam(self):
 	
 		if self.dockwidget.DamButton.isChecked() == True:	
+			
+			self.dockwidget.verticalGroupBox.setEnabled(False)
 			self.dockwidget.KnickButton.setEnabled(False)
 			self.dockwidget.AllCheckBox.setEnabled(False)
 			self.dockwidget.SaveButton.setEnabled(False)	
@@ -836,7 +895,8 @@ class TopopyProfiler:
 			self.dockwidget.lineEdit.setText(str(self.Data))
 			self.iface.mainWindow().statusBar().showMessage( 'Left Point: Left click / Rigth Point: Rigth Click')	
 		if self.dockwidget.DamButton.isChecked() == False:	
-			self.dockwidget.KnickButton.setEnabled(True)
+			self.dockwidget.verticalGroupBox.setEnabled(True)
+			self.lay_show('K')
 			self.dockwidget.AllCheckBox.setEnabled(True)
 			self.dockwidget.SaveButton.setEnabled(True)	
 			self.dockwidget.SaveComboBox.setEnabled(True)
@@ -844,11 +904,10 @@ class TopopyProfiler:
 			self.dockwidget.PathButton.setEnabled(True)	
 			self.dockwidget.AddButton.setEnabled(True)	
 			self.dockwidget.RegButton.setEnabled(True)
-			self.show_knickpoints(self.channel)
 			self.Ecanvas.mpl_disconnect(self.Edam)
 			self.Ccanvas.mpl_disconnect(self.Cdam)
 			self.iface.mainWindow().statusBar().showMessage('')	
-
+		
 	def dam(self, event, graphic):
 		if event.inaxes:
 	
@@ -913,7 +972,7 @@ class TopopyProfiler:
 			dam.append(Data[2][0])
 		if type(Data[3]) == list:
 			dam.append(Data[3][0])
-		self.show_knickpoints(self.channel)
+		self.lay_show('K')
 		for d in dam:
 			
 			self.Eaxes.plot(self.channel.get_d(head=False)[d], self.channel.get_z()[d], color='b', ls='None', marker='|', ms=10)
@@ -924,6 +983,31 @@ class TopopyProfiler:
 			# # Slope profile
 			self.Saxes.plot(self.channel.get_d(head=False)[d], self.channel.get_slope()[d]*100,  color='r', ls='None', marker='x', ms=10)
 		self.draw_graph()			
+
+	def lay_show(self, show):
+		if show == 'C':
+			if self.dockwidget.LayCursorCheckBox.isChecked()==False:
+				self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
+		try:
+			if show == 'S':
+				if self.dockwidget.LayStreamCheckBox.isChecked()==False:
+					self.rubberband.reset(QgsWkbTypes.LineGeometry)		
+				else:
+					for x, y in self.channel.get_xy():
+						self.rubberband.addPoint(QgsPointXY(x, y))
+			if show == 'K':
+				if self.dockwidget.LayKpCheckBox.isChecked()==False:
+					self.rubberknick.reset(QgsWkbTypes.PointGeometry)
+					self.clear_graph()
+					self.single_channels()
+					self.draw_graph()
+					self.dockwidget.KnickButton.setEnabled(False)
+				else:
+					self.show_knickpoints(self.channel)
+					if self.dockwidget.DamButton.isChecked() == False:	
+						self.dockwidget.KnickButton.setEnabled(True)
+		except:
+			None
 
 	def save (self):
 		format = self.dockwidget.SaveComboBox.currentIndex()
