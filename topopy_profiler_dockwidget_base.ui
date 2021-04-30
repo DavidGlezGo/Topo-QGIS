@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>906</width>
-    <height>421</height>
+    <width>809</width>
+    <height>414</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -180,7 +180,22 @@
          </item>
          <item>
           <property name="text">
-           <string>Graphics (.jpg/.svg)</string>
+           <string>Graphics (.png)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Graphics (.svg)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Graphics (.ps)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Graphics (.dps)</string>
           </property>
          </item>
         </widget>
@@ -322,7 +337,7 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <item>
-              <widget class="QGroupBox" name="verticalGroupBox">
+              <widget class="QFrame" name="verticalFrame">
                <property name="minimumSize">
                 <size>
                  <width>250</width>
@@ -333,7 +348,7 @@
                 <item>
                  <widget class="QGroupBox" name="verticalGroupBox">
                   <property name="title">
-                   <string>Show in Layout</string>
+                   <string>Show</string>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_4">
                    <item>
@@ -386,70 +401,54 @@
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_8">
+                     <item>
+                      <widget class="QSpinBox" name="SmoothSpinBox">
+                       <property name="maximumSize">
+                        <size>
+                         <width>45</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="prefix">
+                        <string>X</string>
+                       </property>
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label_2">
+                       <property name="text">
+                        <string>Smooth</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <spacer name="verticalSpacer">
+                     <property name="orientation">
+                      <enum>Qt::Vertical</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>20</width>
+                       <height>40</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
                   </layout>
                  </widget>
-                </item>
-                <item>
-                 <spacer name="verticalSpacer">
-                  <property name="orientation">
-                   <enum>Qt::Vertical</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>20</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                 </spacer>
                 </item>
                </layout>
               </widget>
              </item>
              <item>
-              <widget class="QTextBrowser" name="textBrowser"/>
-             </item>
-            </layout>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab">
-         <attribute name="title">
-          <string>Desarrollo</string>
-         </attribute>
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QGroupBox" name="verticalGroupBox_2">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="title">
-             <string>Mensajes de resultados (borrar cuando se haya terminado el desarrollo del plugin)</string>
-            </property>
-            <property name="flat">
-             <bool>false</bool>
-            </property>
-            <property name="checkable">
-             <bool>false</bool>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_2">
-             <item>
-              <widget class="QLineEdit" name="lineEdit"/>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="lineEdit_2"/>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="lineEdit_3"/>
+              <layout class="QVBoxLayout" name="verticalLayout_5"/>
              </item>
             </layout>
            </widget>

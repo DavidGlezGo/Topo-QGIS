@@ -690,15 +690,18 @@ class Network(PRaster):
         sp.ImportFromWkt(self._proj)
         layer = dataset.CreateLayer("rivers", sp, ogr.wkbLineString)
         layer.CreateField(ogr.FieldDefn("segid", ogr.OFTInteger))
-        layer.CreateField(ogr.FieldDefn("order", ogr.OFTInteger))
+        layer.CreateField(ogr.FieldDefn("strahler", ogr.OFTInteger))
+        layer.CreateField(ogr.FieldDefn("shreeve", ogr.OFTInteger))        
         layer.CreateField(ogr.FieldDefn("flowto", ogr.OFTInteger))
         
         # Get channel segments and orders
         ch_seg = self.get_stream_segments(False).ravel()
-        ch_ord = self.get_stream_orders(asgrid=False).ravel()
+        ch_stra = self.get_stream_orders(asgrid=False).ravel()
+        ch_shre = self.get_stream_orders(kind='shreeve', asgrid=False).ravel()    
         ch_seg = ch_seg[self._ix]
-        ch_ord = ch_ord[self._ix]
-        
+        ch_stra = ch_stra[self._ix]
+        ch_shre = ch_shre[self._ix]       
+         
         # Get ixcix auxiliar array
         ixcix = np.zeros(self.get_ncells(), np.int)
         ixcix[self._ix] = np.arange(self._ix.size)
@@ -719,16 +722,18 @@ class Network(PRaster):
             first = ch_ix[0]
             
             # Get segment order and receiver segment
-            order = ch_ord[ixcix[first]]
+            stra = ch_stra[ixcix[first]]
+            shre = ch_shre[ixcix[first]]
             if ixcix[last] == 0:
                 flowto = idx
             else:
                 flowto = ch_seg[ixcix[last]]
-            
+                
             # Add feature
             feat = ogr.Feature(layer.GetLayerDefn())
             feat.SetField("segid", int(idx))
-            feat.SetField("order", int(order))
+            feat.SetField("strahler", int(stra))
+            feat.SetField("shreeve", int(shre))
             feat.SetField("flowto", int(flowto))
             row, col = self.ind_2_cell(ch_ix)
             xi, yi = self.cell_2_xy(row, col)
