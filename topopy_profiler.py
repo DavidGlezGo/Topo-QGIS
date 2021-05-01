@@ -329,7 +329,7 @@ class TopopyProfiler:
 		self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 		self.iface.mainWindow().statusBar().showMessage( '' )
 
-		self.CHs=None
+		self.CHs=[]
 
 	def unload(self):
 		'''Removes the plugin menu item and icon from QGIS GUI.'''
@@ -385,7 +385,11 @@ class TopopyProfiler:
 		self.dockwidget.KnickButton.clicked.connect(self.check_knickpoints)
 		self.dockwidget.SaveButton.clicked.connect(self.save)
 		self.dockwidget.RegButton.clicked.connect(self.regression)	
-		self.dockwidget.DamButton.clicked.connect(self.remove_dam)		
+		self.dockwidget.DamButton.clicked.connect(self.remove_dam)	
+		
+		self.dockwidget.RegButton.clicked.connect(lambda:self.knick_move('L'))
+		self.dockwidget.DamButton.clicked.connect(lambda:self.knick_move('R'))
+		
 		self.dockwidget.LayCursorCheckBox.clicked.connect(lambda:self.lay_show('C'))		
 		self.dockwidget.LayStreamCheckBox.clicked.connect(lambda:self.lay_show('S'))	
 		self.dockwidget.LayKpCheckBox.clicked.connect(lambda:self.lay_show('K'))	
@@ -459,13 +463,13 @@ class TopopyProfiler:
 
 	def change_graph(self):
 		''' Change the plotted channel '''
-		if 	self.CHs != None:
+		if 	len(self.CHs) != 0:
 			# Clear the profiles
 			self.clear_graph()
 			
 			# Call the channel 
 			self.channel = self.CHs[self.graph]
-			
+			self.smooth = self.dockwidget.SmoothSpinBox.value()
 			self.single_channels()
 
 			# Update the channel selector 
@@ -501,6 +505,7 @@ class TopopyProfiler:
 			self.lay_show('C')	
 			self.lay_show('S')	
 			self.lay_show('K')	
+			
 
 	def next_prev(self, direction):
 		''' Select the next or previuos channel '''
@@ -557,24 +562,23 @@ class TopopyProfiler:
 		self.change_graph()
 
 	def single_channels(self):
-		smooth=self.dockwidget.SmoothSpinBox.value()
+
 		# Set the Profiles
 		# Elevation profile
-		self.Eaxes.plot(self.channel.get_d(head=False)[::smooth], self.channel.get_z()[::smooth], color='r', ls='-', c='0.3', lw=1)
+		self.Eaxes.plot(self.channel.get_d(head=False)[::self.smooth], self.channel.get_z()[::self.smooth], color='r', ls='-', c='0.3', lw=1)
 		self.Eaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))
 		# Chi profile
-		self.Caxes.plot(self.channel.get_chi()[::smooth], self.channel.get_z()[::smooth], color='r', ls='-', c='0.3', lw=1)
+		self.Caxes.plot(self.channel.get_chi()[::self.smooth], self.channel.get_z()[::self.smooth], color='r', ls='-', c='0.3', lw=1)
 		self.Caxes.set_xlim(xmin=min(self.channel.get_chi()), xmax=max(self.channel.get_chi()))
 		# Ksn profile
-		self.Kaxes.plot(self.channel.get_d(head=False)[::smooth], self.channel.get_ksn()[::smooth],  color='0', ls='None', marker='.', ms=1)
+		self.Kaxes.plot(self.channel.get_d(head=False)[::self.smooth], self.channel.get_ksn()[::self.smooth],  color='0', ls='None', marker='.', ms=1)
 		self.Kaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))
 		# Slope profile
-		self.Saxes.plot(self.channel.get_d(head=False)[::smooth], self.channel.get_slope()[::smooth]*100,  color='0', ls='None', marker='.', ms=1)
+		self.Saxes.plot(self.channel.get_d(head=False)[::self.smooth], self.channel.get_slope()[::self.smooth]*100,  color='0', ls='None', marker='.', ms=1)
 		self.Saxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))		
 
 	def all_channels(self):
 		'''Show all channels'''
-		smooth=self.dockwidget.SmoothSpinBox.value()		
 		if self.dockwidget.AllCheckBox.isChecked()==True:
 			# Clear the profiles
 			self.clear_graph()
@@ -590,16 +594,16 @@ class TopopyProfiler:
 				C = random.choice(plotcolor)
 				# Set the Profiles
 				# Elevation profile
-				self.Eaxes.plot(self.CHs[n].get_d(head=False)[::smooth], self.CHs[n].get_z()[::smooth], color=C, ls='-', c='0.3', lw=1)
+				self.Eaxes.plot(self.CHs[n].get_d(head=False)[::self.smooth], self.CHs[n].get_z()[::self.smooth], color=C, ls='-', c='0.3', lw=1)
 				self.Eaxes.set_xlim(xmin=0, xmax=max(self.d_all))
 				# Chi profile
-				self.Caxes.plot(self.CHs[n].get_chi()[::smooth], self.CHs[n].get_z()[::smooth], color=C, ls='-', c='0.3', lw=1)
+				self.Caxes.plot(self.CHs[n].get_chi()[::self.smooth], self.CHs[n].get_z()[::self.smooth], color=C, ls='-', c='0.3', lw=1)
 				self.Caxes.set_xlim(xmin=min(self.chi_all), xmax=max(self.chi_all))
 				# Ksn profile
-				self.Kaxes.plot(self.CHs[n].get_d(head=False)[::smooth], self.CHs[n].get_ksn()[::smooth],  color=C, ls='None', marker='.', ms=1)
+				self.Kaxes.plot(self.CHs[n].get_d(head=False)[::self.smooth], self.CHs[n].get_ksn()[::self.smooth],  color=C, ls='None', marker='.', ms=1)
 				self.Kaxes.set_xlim(xmin=0, xmax=max(self.d_all))
 				# Slope profile
-				self.Saxes.plot(self.CHs[n].get_d(head=False)[::smooth], self.CHs[n].get_slope()[::smooth]*100,  color=C, ls='None', marker='.', ms=1)
+				self.Saxes.plot(self.CHs[n].get_d(head=False)[::self.smooth], self.CHs[n].get_slope()[::self.smooth]*100,  color=C, ls='None', marker='.', ms=1)
 				self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
 
 			# Show the profiles
@@ -707,9 +711,8 @@ class TopopyProfiler:
 				None
 
 			self.dockwidget.RegButton.setText('<')
-			self.dockwidget.RegButton.clicked.connect(lambda:self.knick_move('L'))
 			self.dockwidget.DamButton.setText('>')
-			self.dockwidget.DamButton.clicked.connect(lambda:self.knick_move('R'))
+
 
 			self.knick_buttons()
 		
@@ -734,14 +737,6 @@ class TopopyProfiler:
 			self.dockwidget.DamButton.setCheckable(True)			
 
 			self.iface.mainWindow().statusBar().showMessage( '' )	
-			try:
-				self.dockwidget.RegButton.clicked.disconnect(lambda:self.knick_move('L'))
-			except:
-				None
-			try:
-				self.dockwidget.DamButton.clicked.disconnect(lambda:self.knick_move('R'))
-			except:
-				None
 
 			self.dockwidget.RegButton.setText('Regression')			
 			self.dockwidget.RegButton.clicked.connect(self.regression)
@@ -749,12 +744,17 @@ class TopopyProfiler:
 			self.dockwidget.DamButton.clicked.connect(self.remove_dam)
 
 	def knpoint(self, event, graphic):
-		smooth=self.dockwidget.SmoothSpinBox.value()	
 		if event.inaxes:
+			print('D: '+str(self.channel.get_d(head=False)[::self.smooth]))
 			if graphic == 'D':
-				i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
+				if self.smooth == 1:
+					i = np.abs(list(self.channel.get_d(head=False))- event.xdata).argmin()
+				else:
+					S = list(self.channel.get_d(head=False))[::self.smooth][np.abs(list(self.channel.get_d(head=False))[::self.smooth] - event.xdata).argmin()]			
+					i = np.abs(list(self.channel.get_d(head=False)) - S).argmin()
+					print (S)
 			if graphic == 'C':
-				i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()		
+				i = np.abs(list(self.channel.get_chi())[::self.smooth] - event.xdata).argmin()		
 				
 			if event.button == 1:
 	
@@ -765,7 +765,8 @@ class TopopyProfiler:
 					i = np.abs(list(self.CHs[self.graph]._knickpoints) - i).argmin()
 
 					self.CHs[self.graph]._knickpoints.pop(i)
-				
+
+			print('KPs: '+str(self.CHs[self.graph]._knickpoints))
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 
 			self.show_knickpoints(self.channel)	
@@ -773,13 +774,19 @@ class TopopyProfiler:
 		self.knick_buttons()		
 
 	def knick_move(self, move):
-		
-		if len(self.CHs[self.graph]._knickpoints) > 0:
+		if self.dockwidget.KnickButton.isChecked()==True:
+			# if len(self.CHs[self.graph]._knickpoints) > 0:
 			i = self.CHs[self.graph]._knickpoints[-1]
 			if move == 'L':
-				i2 = i+1
+				if i == ((len(self.channel._zx)//self.smooth)*self.smooth):
+					i2 = len(self.channel._zx)-1
+				else:
+					i2 = i+self.smooth
 			if move == 'R':
-				i2 = i-1			
+				if i == len(self.channel._zx)-1 :
+					i2 = ((len(self.channel._zx)//self.smooth)*self.smooth)
+				else:
+					i2 = i-self.smooth		
 			self.CHs[self.graph]._knickpoints.pop()
 			self.CHs[self.graph]._knickpoints.append(i2)
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
