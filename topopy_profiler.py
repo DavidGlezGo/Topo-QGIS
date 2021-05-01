@@ -146,6 +146,27 @@ class TopopyProfiler:
 		self.provider = None
 ####-----------------------------------------------------------------------------####		
 
+		# Button actions
+		self.dockwidget.AddButton.clicked.connect(self.calculate_channels)
+		self.dockwidget.NextButton.clicked.connect(lambda:self.next_prev(1))
+		self.dockwidget.PrevButton.clicked.connect(lambda:self.next_prev(0))
+		self.dockwidget.GoButton.clicked.connect(self.go_graph)
+		self.dockwidget.AllCheckBox.clicked.connect(self.all_channels)
+		self.dockwidget.KnickButton.clicked.connect(self.check_knickpoints)
+		self.dockwidget.SaveButton.clicked.connect(self.save)
+		self.dockwidget.RegButton.clicked.connect(self.regression)	
+		self.dockwidget.DamButton.clicked.connect(self.remove_dam)	
+		
+		self.dockwidget.RegButton.clicked.connect(lambda:self.knick_move('L'))
+		self.dockwidget.DamButton.clicked.connect(lambda:self.knick_move('R'))
+		
+		self.dockwidget.LayCursorCheckBox.clicked.connect(lambda:self.lay_show('C'))		
+		self.dockwidget.LayStreamCheckBox.clicked.connect(lambda:self.lay_show('S'))	
+		self.dockwidget.LayKpCheckBox.clicked.connect(lambda:self.lay_show('K'))	
+
+		self.dockwidget.SmoothSpinBox.valueChanged.connect(self.change_graph)
+		
+
 	# noinspection PyMethodMayBeStatic
 	def tr(self, message):
 		'''Get the translation for a string using Qt translation API.
@@ -280,6 +301,11 @@ class TopopyProfiler:
 		self.dockwidget.SaveButton.setEnabled(False)	
 		self.dockwidget.SaveComboBox.setEnabled(False)	
 		self.dockwidget.verticalGroupBox.setEnabled(True)
+
+		self.Ecanvas.mpl_disconnect(self.Epoint)
+		self.Ccanvas.mpl_disconnect(self.Cpoint)
+		self.Kcanvas.mpl_disconnect(self.Kpoint)
+		self.Scanvas.mpl_disconnect(self.Spoint)		
 		
 		if self.dockwidget.KnickButton.isChecked()==True:		
 			try:
@@ -376,26 +402,7 @@ class TopopyProfiler:
 		# Clear the contents of the comboBox from previous runs
 		self.dockwidget.FileLineEdit.clear()
 		
-		# Button actions
-		self.dockwidget.AddButton.clicked.connect(self.calculate_channels)
-		self.dockwidget.NextButton.clicked.connect(lambda:self.next_prev(1))
-		self.dockwidget.PrevButton.clicked.connect(lambda:self.next_prev(0))
-		self.dockwidget.GoButton.clicked.connect(self.go_graph)
-		self.dockwidget.AllCheckBox.clicked.connect(self.all_channels)
-		self.dockwidget.KnickButton.clicked.connect(self.check_knickpoints)
-		self.dockwidget.SaveButton.clicked.connect(self.save)
-		self.dockwidget.RegButton.clicked.connect(self.regression)	
-		self.dockwidget.DamButton.clicked.connect(self.remove_dam)	
-		
-		self.dockwidget.RegButton.clicked.connect(lambda:self.knick_move('L'))
-		self.dockwidget.DamButton.clicked.connect(lambda:self.knick_move('R'))
-		
-		self.dockwidget.LayCursorCheckBox.clicked.connect(lambda:self.lay_show('C'))		
-		self.dockwidget.LayStreamCheckBox.clicked.connect(lambda:self.lay_show('S'))	
-		self.dockwidget.LayKpCheckBox.clicked.connect(lambda:self.lay_show('K'))	
 
-		self.dockwidget.SmoothSpinBox.valueChanged.connect(self.change_graph)
-		
 		# Help message at the bottom of the QGis window
 		self.iface.mainWindow().statusBar().showMessage( 'Set CHANNELS file (.npy), then click on \'READ\' to display the profiles.' )
 
