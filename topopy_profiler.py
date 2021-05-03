@@ -119,7 +119,7 @@ class TopopyProfiler:
 		# Set first channel to plot 
 		self.graph = 0
 		
-		self.CHs=None		
+		self.CHs=[]
 
 		# Set the properties of the temporary layer
 		self.rubberband = QgsRubberBand(self.iface.mapCanvas(), False)
@@ -164,8 +164,9 @@ class TopopyProfiler:
 		self.dockwidget.LayStreamCheckBox.clicked.connect(lambda:self.lay_show('S'))	
 		self.dockwidget.LayKpCheckBox.clicked.connect(lambda:self.lay_show('K'))	
 
-		self.dockwidget.SmoothSpinBox.valueChanged.connect(self.change_graph)
+		self.dockwidget.SmoothSpinBox.valueChanged.connect(self.smooth)
 		
+		self.AAA =0
 
 	# noinspection PyMethodMayBeStatic
 	def tr(self, message):
@@ -302,10 +303,13 @@ class TopopyProfiler:
 		self.dockwidget.SaveComboBox.setEnabled(False)	
 		self.dockwidget.verticalGroupBox.setEnabled(True)
 
-		self.Ecanvas.mpl_disconnect(self.Epoint)
-		self.Ccanvas.mpl_disconnect(self.Cpoint)
-		self.Kcanvas.mpl_disconnect(self.Kpoint)
-		self.Scanvas.mpl_disconnect(self.Spoint)		
+		try:
+			self.Ecanvas.mpl_disconnect(self.Epoint)
+			self.Ccanvas.mpl_disconnect(self.Cpoint)
+			self.Kcanvas.mpl_disconnect(self.Kpoint)
+			self.Scanvas.mpl_disconnect(self.Spoint)
+		except:
+			None
 		
 		if self.dockwidget.KnickButton.isChecked()==True:		
 			try:
@@ -426,9 +430,11 @@ class TopopyProfiler:
 
 	def select_output_file(self):
 		filename, _filter = QFileDialog.getOpenFileName(self.dockwidget, 'Select Channels file ','', 'NPY files (*.npy)')
-		self.dockwidget.FileLineEdit.setText(filename)
+		if filename != '':
+			self.dockwidget.FileLineEdit.setText(filename)
 
 	def calculate_channels(self):
+		print('calculate')
 		''' Calculate all elements of topopy '''
 		filename = self.dockwidget.FileLineEdit.text()
 		if filename:
@@ -468,7 +474,14 @@ class TopopyProfiler:
 			self.d_all = []
 			self.chi_all = []
 
+	def smooth(self):
+		if self.dockwidget.AllCheckBox.isChecked()==True:
+			self.all_channels()
+		else:
+			self.change_graph()
+			
 	def change_graph(self):
+		print('change')
 		''' Change the plotted channel '''
 		if 	len(self.CHs) != 0:
 			# Clear the profiles
@@ -477,7 +490,6 @@ class TopopyProfiler:
 			# Call the channel 
 			self.channel = self.CHs[self.graph]
 			self.smooth = self.dockwidget.SmoothSpinBox.value()
-			self.single_channels()
 
 			# Update the channel selector 
 			self.dockwidget.GoSpinBox.setValue(int(self.graph)+1)
@@ -513,10 +525,11 @@ class TopopyProfiler:
 			self.lay_show('S')	
 			self.lay_show('K')	
 			
+			
 
 	def next_prev(self, direction):
 		''' Select the next or previuos channel '''
-		
+		print('next_prev')
 		if direction == 0:
 			# Go back to the previous channel
 			if self.graph > 0:
@@ -549,7 +562,7 @@ class TopopyProfiler:
 		
 	def go_graph(self):
 		''' Select a specific channel '''
-		
+		print('go')
 		# Select the channel number 	
 		self.graph = self.dockwidget.GoSpinBox.value() - 1
 	
@@ -569,20 +582,23 @@ class TopopyProfiler:
 		self.change_graph()
 
 	def single_channels(self):
-
+		print('single')
+		print(self.AAA)
+		self.AAA+=1
 		# Set the Profiles
 		# Elevation profile
-		self.Eaxes.plot(self.channel.get_d(head=False)[::self.smooth], self.channel.get_z()[::self.smooth], color='r', ls='-', c='0.3', lw=1)
+		self.Eaxes.plot(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]]), list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
 		self.Eaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))
 		# Chi profile
-		self.Caxes.plot(self.channel.get_chi()[::self.smooth], self.channel.get_z()[::self.smooth], color='r', ls='-', c='0.3', lw=1)
+		self.Caxes.plot(list(self.channel.get_chi()[::self.smooth])+list([self.channel.get_chi()[-1]]), list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
 		self.Caxes.set_xlim(xmin=min(self.channel.get_chi()), xmax=max(self.channel.get_chi()))
 		# Ksn profile
-		self.Kaxes.plot(self.channel.get_d(head=False)[::self.smooth], self.channel.get_ksn()[::self.smooth],  color='0', ls='None', marker='.', ms=1)
+		self.Kaxes.plot(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]]), list(self.channel.get_ksn()[::self.smooth])+list([self.channel.get_ksn()[-1]]),  color='0', ls='None', marker='.', ms=1)
 		self.Kaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))
 		# Slope profile
-		self.Saxes.plot(self.channel.get_d(head=False)[::self.smooth], self.channel.get_slope()[::self.smooth]*100,  color='0', ls='None', marker='.', ms=1)
+		self.Saxes.plot(np.array(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]])), np.array(list(self.channel.get_slope()[::self.smooth])+list([self.channel.get_slope()[-1]]))*100,  color='0', ls='None', marker='.', ms=1)
 		self.Saxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))		
+		print(list([self.channel.get_d(head=False)[-1]]))
 
 	def all_channels(self):
 		'''Show all channels'''
@@ -597,20 +613,21 @@ class TopopyProfiler:
 					self.chi_all += list(self.CHs[n].get_chi())
 
 			for n in np.arange(len(self.CHs)):
+				print('all')
 				plotcolor = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 				C = random.choice(plotcolor)
 				# Set the Profiles
 				# Elevation profile
-				self.Eaxes.plot(self.CHs[n].get_d(head=False)[::self.smooth], self.CHs[n].get_z()[::self.smooth], color=C, ls='-', c='0.3', lw=1)
+				self.Eaxes.plot(list(self.CHs[n].get_d(head=False)[::self.smooth])+list([self.CHs[n].get_d(head=False)[-1]]), list(self.CHs[n].get_z()[::self.smooth])+list([self.CHs[n].get_z()[-1]]), color=C, ls='-', c='0.3', lw=1)
 				self.Eaxes.set_xlim(xmin=0, xmax=max(self.d_all))
 				# Chi profile
-				self.Caxes.plot(self.CHs[n].get_chi()[::self.smooth], self.CHs[n].get_z()[::self.smooth], color=C, ls='-', c='0.3', lw=1)
+				self.Caxes.plot(list(self.CHs[n].get_chi()[::self.smooth])+list([self.CHs[n].get_chi()[-1]]), list(self.CHs[n].get_z()[::self.smooth])+list([self.CHs[n].get_z()[-1]]), color=C, ls='-', c='0.3', lw=1)
 				self.Caxes.set_xlim(xmin=min(self.chi_all), xmax=max(self.chi_all))
 				# Ksn profile
-				self.Kaxes.plot(self.CHs[n].get_d(head=False)[::self.smooth], self.CHs[n].get_ksn()[::self.smooth],  color=C, ls='None', marker='.', ms=1)
+				self.Kaxes.plot(list(self.CHs[n].get_d(head=False)[::self.smooth])+list([self.CHs[n].get_d(head=False)[-1]]), list(self.CHs[n].get_ksn()[::self.smooth])+list([self.CHs[n].get_ksn()[-1]]),  color=C, ls='None', marker='.', ms=1)
 				self.Kaxes.set_xlim(xmin=0, xmax=max(self.d_all))
 				# Slope profile
-				self.Saxes.plot(self.CHs[n].get_d(head=False)[::self.smooth], self.CHs[n].get_slope()[::self.smooth]*100,  color=C, ls='None', marker='.', ms=1)
+				self.Saxes.plot(np.array(list(self.CHs[n].get_d(head=False)[::self.smooth])+list([self.CHs[n].get_d(head=False)[-1]])), np.array(list(self.CHs[n].get_slope()[::self.smooth])+list([self.CHs[n].get_slope()[-1]]))*100,  color=C, ls='None', marker='.', ms=1)
 				self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
 
 			# Show the profiles
@@ -804,6 +821,7 @@ class TopopyProfiler:
 			self.knick_buttons()
 
 	def show_knickpoints(self, channel):
+		print('S_KP')
 		kpoints = channel._knickpoints		
 		self.clear_graph()
 		self.single_channels()
