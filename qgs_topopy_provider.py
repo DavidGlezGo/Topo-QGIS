@@ -36,7 +36,7 @@ from .algs.FlowDir_alg import FlowDir
 from .algs.FlowAcc_alg import FlowAccumulation
 from .algs.StreamPOI_alg import Stream_POI
 from .algs.Basins_alg import Get_Basins
-from .algs.Orders_alg import Get_Orders
+from .algs.Ch2Vector import Channel2Vector
 from .algs.StreamSHP_alg import Streams2shp
 from .algs.Chishp_alg import Chi_shp
 from .algs.Channels_alg import Get_Channels
@@ -66,7 +66,7 @@ class QgsTopopyProvider(QgsProcessingProvider):
                     FlowAccumulation(),
                     Stream_POI(),
                     Get_Basins(),
-					Get_Orders(),
+					Channel2Vector(),
 					Streams2shp(),
 					Chi_shp(),
 					Get_Channels(),
