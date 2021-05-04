@@ -164,9 +164,8 @@ class TopopyProfiler:
 		self.dockwidget.LayStreamCheckBox.clicked.connect(lambda:self.lay_show('S'))	
 		self.dockwidget.LayKpCheckBox.clicked.connect(lambda:self.lay_show('K'))	
 
-		self.dockwidget.SmoothSpinBox.valueChanged.connect(self.smooth)
-		
-		self.AAA =0
+		self.dockwidget.SmoothButton.clicked.connect(self.smooth)
+		self.dockwidget.tabWidget.currentChanged.connect(self.tabs)
 
 	# noinspection PyMethodMayBeStatic
 	def tr(self, message):
@@ -451,8 +450,6 @@ class TopopyProfiler:
 			self.dockwidget.NcLabelValue.setText(str(len(self.CHs))+ ' Channels loaded')
 
 			self.dockwidget.KnickButton.setEnabled(True)
-			self.dockwidget.RegButton.setEnabled(True)
-			self.dockwidget.DamButton.setEnabled(True)
 			self.dockwidget.SaveButton.setEnabled(True)	
 			self.dockwidget.SaveComboBox.setEnabled(True)	
 
@@ -470,6 +467,7 @@ class TopopyProfiler:
 		
 			self.iface.mainWindow().statusBar().showMessage( '' )
 
+			self.tabs()
 			
 			self.d_all = []
 			self.chi_all = []
@@ -583,8 +581,6 @@ class TopopyProfiler:
 
 	def single_channels(self):
 		print('single')
-		print(self.AAA)
-		self.AAA+=1
 		# Set the Profiles
 		# Elevation profile
 		self.Eaxes.plot(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]]), list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
@@ -692,6 +688,19 @@ class TopopyProfiler:
 		self.Kcanvas.draw()
 		self.Scanvas.draw()
 
+	def tabs(self):
+		if len(self.CHs) != 0:
+			if self.dockwidget.KnickButton.isChecked()==False:
+				if self.dockwidget.tabWidget.currentIndex() == 1:
+					self.dockwidget.RegButton.setEnabled(True)
+				else:
+					self.dockwidget.RegButton.setEnabled(False)
+
+				if self.dockwidget.tabWidget.currentIndex() <=1:
+					self.dockwidget.DamButton.setEnabled(True)	
+				else:
+					self.dockwidget.DamButton.setEnabled(False)				
+
 	def move(self, event, graphic):
 		
 		if self.dockwidget.LayCursorCheckBox.isChecked()==True:	
@@ -722,7 +731,7 @@ class TopopyProfiler:
 			self.dockwidget.FileLineEdit.setEnabled(False)	
 			self.dockwidget.PathButton.setEnabled(False)	
 			self.dockwidget.AddButton.setEnabled(False)	
-
+			
 			self.dockwidget.RegButton.setCheckable(False)
 			self.dockwidget.DamButton.setCheckable(False)
 			
@@ -754,8 +763,8 @@ class TopopyProfiler:
 			self.dockwidget.FileLineEdit.setEnabled(True)	
 			self.dockwidget.PathButton.setEnabled(True)	
 			self.dockwidget.AddButton.setEnabled(True)	
-			self.dockwidget.RegButton.setEnabled(True)
-			self.dockwidget.DamButton.setEnabled(True)	
+
+			self.tabs()
 
 			self.dockwidget.RegButton.setCheckable(True)
 			self.dockwidget.DamButton.setCheckable(True)			
