@@ -620,8 +620,8 @@ class TopopyProfiler:
 
 			for n in np.arange(len(self.CHs)):
 				print('all')
-				plotcolor = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-				C = random.choice(plotcolor)
+				color = np.arange(0,1,0.1)
+				C = (random.choice(color), random.choice(color), random.choice(color))
 				# Set the Profiles
 				# Elevation profile
 				self.Eaxes.plot(list(self.CHs[n].get_d(head=False)[::self.smooth])+list([self.CHs[n].get_d(head=False)[-1]]), list(self.CHs[n].get_z()[::self.smooth])+list([self.CHs[n].get_z()[-1]]), color=C, ls='-', c='0.3', lw=1)
