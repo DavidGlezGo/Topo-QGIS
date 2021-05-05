@@ -100,21 +100,25 @@ class TopopyProfiler:
 		self.Ccanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
 		self.Kcanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
 		self.Scanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
+		self.Hcanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
 		
 		self.Eaxes = self.Ecanvas.figure.add_subplot()
 		self.Caxes = self.Ccanvas.figure.add_subplot()
 		self.Kaxes = self.Kcanvas.figure.add_subplot()
 		self.Saxes = self.Scanvas.figure.add_subplot()
+		self.Haxes = self.Hcanvas.figure.add_subplot()
 		
 		self.ElevLayout = self.dockwidget.ElevProf.layout()
 		self.ChiLayout = self.dockwidget.ChiProf.layout()
 		self.KsnLayout = self.dockwidget.KsnProf.layout()
 		self.SlopeLayout = self.dockwidget.SlopeProf.layout()
+		self.HypsoLayout = self.dockwidget.HypsoProf.layout()
 		
 		self.ElevLayout.addWidget(self.Ecanvas)
 		self.ChiLayout.addWidget(self.Ccanvas)
 		self.KsnLayout.addWidget(self.Kcanvas)
 		self.SlopeLayout.addWidget(self.Scanvas)
+		self.HypsoLayout.addWidget(self.Hcanvas)
 
 		# Set first channel to plot 
 		self.graph = 0
@@ -307,6 +311,7 @@ class TopopyProfiler:
 			self.Ccanvas.mpl_disconnect(self.Cpoint)
 			self.Kcanvas.mpl_disconnect(self.Kpoint)
 			self.Scanvas.mpl_disconnect(self.Spoint)
+			self.Hcanvas.mpl_disconnect(self.Hpoint)
 		except:
 			None
 		
@@ -496,6 +501,7 @@ class TopopyProfiler:
 			self.Cpoint = self.Ccanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'C'))
 			self.Kpoint = self.Kcanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
 			self.Spoint = self.Scanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
+			self.Hpoint = self.Hcanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
 
 			# W = self.dockwidget.ElevProf.geometry().width()
 			# H = self.dockwidget.ElevProf.geometry().height()
@@ -594,8 +600,11 @@ class TopopyProfiler:
 		# Slope profile
 		self.Saxes.plot(np.array(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]])), np.array(list(self.channel.get_slope()[::self.smooth])+list([self.channel.get_slope()[-1]]))*100,  color='0', ls='None', marker='.', ms=1)
 		self.Saxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))		
-		print(list([self.channel.get_d(head=False)[-1]]))
-
+		areas = np.array(list(self.channel.get_a(head=False)[::self.smooth])+list([self.channel.get_a(head=False)[-1]]))
+		
+		hypsometric = (np.cumsum(areas)/sum(areas))*100
+		self.Haxes.plot(hypsometric, list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
+		self.Haxes.set_xlim(xmin=0, xmax=max(hypsometric))		
 	def all_channels(self):
 		'''Show all channels'''
 		if self.dockwidget.AllCheckBox.isChecked()==True:
@@ -625,6 +634,11 @@ class TopopyProfiler:
 				# Slope profile
 				self.Saxes.plot(np.array(list(self.CHs[n].get_d(head=False)[::self.smooth])+list([self.CHs[n].get_d(head=False)[-1]])), np.array(list(self.CHs[n].get_slope()[::self.smooth])+list([self.CHs[n].get_slope()[-1]]))*100,  color=C, ls='None', marker='.', ms=1)
 				self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
+
+				areas = np.array(list(self.CHs[n].get_a(head=False)[::self.smooth])+list([self.CHs[n].get_a(head=False)[-1]]))
+				hypsometric = (np.cumsum(areas)/sum(areas))*100
+				self.Haxes.plot(hypsometric, list(self.CHs[n].get_z()[::self.smooth])+list([self.CHs[n].get_z()[-1]]), color=C, ls='-', c='0.3', lw=1)
+				self.Haxes.set_xlim(xmin=0, xmax=max(hypsometric))
 
 			# Show the profiles
 			self.draw_graph()
@@ -670,6 +684,7 @@ class TopopyProfiler:
 		self.Caxes.clear()
 		self.Kaxes.clear()
 		self.Saxes.clear()
+		self.Haxes.clear()		
 	
 	def draw_graph(self):
 		''' Draw all graphs '''
@@ -682,11 +697,14 @@ class TopopyProfiler:
 		self.Kaxes.set_ylabel('ksn')
 		self.Saxes.set_xlabel('Distance to mouth [m]')
 		self.Saxes.set_ylabel('Slope [%]')
+		self.Haxes.set_xlabel('Area [%]')
+		self.Haxes.set_ylabel('Elevation [m]')
 			
 		self.Ecanvas.draw()
 		self.Ccanvas.draw()
 		self.Kcanvas.draw()
 		self.Scanvas.draw()
+		self.Hcanvas.draw()
 
 	def tabs(self):
 		if len(self.CHs) != 0:

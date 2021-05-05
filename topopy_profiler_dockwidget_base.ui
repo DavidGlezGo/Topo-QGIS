@@ -236,7 +236,7 @@
          <enum>QTabWidget::North</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>4</number>
         </property>
         <widget class="QWidget" name="ElevTab">
          <attribute name="title">
@@ -321,6 +321,24 @@
              <enum>QFrame::StyledPanel</enum>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_13"/>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="HypsoTab">
+         <attribute name="title">
+          <string>Hypsometric</string>
+         </attribute>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QFrame" name="HypsoProf">
+            <property name="cursor">
+             <cursorShape>CrossCursor</cursorShape>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_14"/>
            </widget>
           </item>
          </layout>
