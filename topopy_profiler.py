@@ -638,8 +638,8 @@ class TopopyProfiler:
 
 				areas = self.CHs[n].get_a(head=False)
 				sum_areas = sum(self.CHs[n].get_a(head=False))
-				hypsometric = ((np.cumsum(areas)/sum_areas)*100)[::self.smooth]
-				self.Haxes.plot(hypsometric, list(self.CHs[n].get_z()[::self.smooth]), color=C, ls='-', c='0.3', lw=1)
+				hypsometric = ((np.cumsum(areas)/sum_areas)*100)
+				self.Haxes.plot(hypsometric[::self.smooth], list(self.CHs[n].get_z()[::self.smooth]), color=C, ls='-', c='0.3', lw=1)
 				self.Haxes.set_xlim(xmin=0, xmax=100)
 
 
@@ -700,7 +700,7 @@ class TopopyProfiler:
 		self.Kaxes.set_ylabel('ksn')
 		self.Saxes.set_xlabel('Distance to mouth [m]')
 		self.Saxes.set_ylabel('Slope [%]')
-		self.Haxes.set_xlabel('Area [%]')
+		self.Haxes.set_xlabel('Area Accumulation [%]')
 		self.Haxes.set_ylabel('Elevation [m]')
 			
 		self.Ecanvas.draw()
@@ -1181,24 +1181,29 @@ class TopopyProfiler:
 				ChiFig = self.Ccanvas.figure
 				KsnFig = self.Kcanvas.figure
 				SlpFig = self.Scanvas.figure
+				HypsoFig = self.Hcanvas.figure
 				if format == 3:
 					ElevFig.savefig(str(directory)+'/Elev.png')
 					ChiFig.savefig(str(directory)+'/Chi.png')
 					KsnFig.savefig(str(directory)+'/Ksn.png')
 					SlpFig.savefig(str(directory)+'/Slope.png')
+					HypsoFig.savefig(str(directory)+'/Hypsometric.png')
 				if format == 4:
 					ElevFig.savefig(str(directory)+'/Elev.svg')
 					ChiFig.savefig(str(directory)+'/Chi.svg')
 					KsnFig.savefig(str(directory)+'/Ksn.svg')
 					SlpFig.savefig(str(directory)+'/Slope.svg')
+					HypsoFig.savefig(str(directory)+'/Hypsometric.svg')
 				if format == 5:
 					ElevFig.savefig(str(directory)+'/Elev.ps')
 					ChiFig.savefig(str(directory)+'/Chi.ps')
 					KsnFig.savefig(str(directory)+'/Ksn.ps')
 					SlpFig.savefig(str(directory)+'/Slope.ps')
+					HypsoFig.savefig(str(directory)+'/Hypsometric.ps')
 				if format == 6:
 					ElevFig.savefig(str(directory)+'/Elev.eps')
 					ChiFig.savefig(str(directory)+'/Chi.eps')
 					KsnFig.savefig(str(directory)+'/Ksn.eps')
 					SlpFig.savefig(str(directory)+'/Slope.eps')
+					HypsoFig.savefig(str(directory)+'/Hypsometric.eps')
 				
