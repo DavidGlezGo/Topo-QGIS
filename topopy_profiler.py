@@ -501,7 +501,7 @@ class TopopyProfiler:
 			self.Cpoint = self.Ccanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'C'))
 			self.Kpoint = self.Kcanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
 			self.Spoint = self.Scanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
-			self.Hpoint = self.Hcanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'D'))
+			self.Hpoint = self.Hcanvas.mpl_connect('motion_notify_event', lambda event: self.move(event, 'H'))
 
 			# W = self.dockwidget.ElevProf.geometry().width()
 			# H = self.dockwidget.ElevProf.geometry().height()
@@ -600,11 +600,13 @@ class TopopyProfiler:
 		# Slope profile
 		self.Saxes.plot(np.array(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]])), np.array(list(self.channel.get_slope()[::self.smooth])+list([self.channel.get_slope()[-1]]))*100,  color='0', ls='None', marker='.', ms=1)
 		self.Saxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))		
-		areas = np.array(list(self.channel.get_a(head=False)[::self.smooth])+list([self.channel.get_a(head=False)[-1]]))
 		
-		hypsometric = (np.cumsum(areas)/sum(areas))*100
-		self.Haxes.plot(hypsometric, list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
-		self.Haxes.set_xlim(xmin=0, xmax=max(hypsometric))		
+		areas = np.array(list(self.channel.get_a(head=False)[::self.smooth])+list([self.channel.get_a(head=False)[-1]]))
+		sum_areas = sum(self.channel.get_a(head=False))
+		self.hypsometric = (np.cumsum(areas)/sum_areas)*100
+		print(str(sum_areas))
+		self.Haxes.plot(self.hypsometric, list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
+		self.Haxes.set_xlim(xmin=min	(self.hypsometric), xmax=max(self.hypsometric))		
 	def all_channels(self):
 		'''Show all channels'''
 		if self.dockwidget.AllCheckBox.isChecked()==True:
@@ -636,7 +638,8 @@ class TopopyProfiler:
 				self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
 
 				areas = np.array(list(self.CHs[n].get_a(head=False)[::self.smooth])+list([self.CHs[n].get_a(head=False)[-1]]))
-				hypsometric = (np.cumsum(areas)/sum(areas))*100
+				sum_areas = sum(self.CHs[n].get_a(head=False))
+				hypsometric = (np.cumsum(areas)/sum_areas)*100
 				self.Haxes.plot(hypsometric, list(self.CHs[n].get_z()[::self.smooth])+list([self.CHs[n].get_z()[-1]]), color=C, ls='-', c='0.3', lw=1)
 				self.Haxes.set_xlim(xmin=0, xmax=max(hypsometric))
 
@@ -730,6 +733,8 @@ class TopopyProfiler:
 						i = np.abs(list(self.channel.get_d(head=False)) - event.xdata).argmin()
 					if graphic == 'C':
 						i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()
+					if graphic == 'H':
+						i = np.abs(list(self.hypsometric)- event.xdata).argmin()	
 					xy = self.channel.get_xy()[i]
 					self.rubberpoint.addPoint(QgsPointXY(xy[0], xy[1]))	  
 
@@ -741,6 +746,7 @@ class TopopyProfiler:
 			self.Cknick = self.Ccanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'C'))
 			self.Kknick = self.Kcanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'D'))
 			self.Sknick = self.Scanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'D'))
+			self.Hknick = self.Hcanvas.mpl_connect('button_press_event', lambda event: self.knpoint(event, 'H'))
 			
 			self.dockwidget.verticalGroupBox.setEnabled(False)			
 			self.dockwidget.AllCheckBox.setEnabled(False)
@@ -773,6 +779,7 @@ class TopopyProfiler:
 			self.Ccanvas.mpl_disconnect(self.Cknick)
 			self.Kcanvas.mpl_disconnect(self.Kknick)
 			self.Scanvas.mpl_disconnect(self.Sknick)	
+			self.Hcanvas.mpl_disconnect(self.Hknick)	
 
 			self.dockwidget.verticalGroupBox.setEnabled(True)			
 			self.dockwidget.AllCheckBox.setEnabled(True)
@@ -806,7 +813,9 @@ class TopopyProfiler:
 					print (S)
 			if graphic == 'C':
 				i = np.abs(list(self.channel.get_chi())[::self.smooth] - event.xdata).argmin()		
-				
+			if graphic == 'H':
+					i = np.abs(list(self.hypsometric)- event.xdata).argmin()				
+					
 			if event.button == 1:
 	
 				self.CHs[self.graph]._knickpoints.append(i)
@@ -826,18 +835,32 @@ class TopopyProfiler:
 
 	def knick_move(self, move):
 		if self.dockwidget.KnickButton.isChecked()==True:
+
 			# if len(self.CHs[self.graph]._knickpoints) > 0:
 			i = self.CHs[self.graph]._knickpoints[-1]
-			if move == 'L':
-				if i == ((len(self.channel._zx)//self.smooth)*self.smooth):
-					i2 = len(self.channel._zx)-1
-				else:
-					i2 = i+self.smooth
-			if move == 'R':
-				if i == len(self.channel._zx)-1 :
-					i2 = ((len(self.channel._zx)//self.smooth)*self.smooth)
-				else:
-					i2 = i-self.smooth		
+			if self.dockwidget.tabWidget.currentIndex() == 4:
+				if move == 'R':
+					if i == ((len(self.channel._zx)//self.smooth)*self.smooth):
+						i2 = len(self.channel._zx)-1
+					else:
+						i2 = i+self.smooth
+				if move == 'L':
+					if i == len(self.channel._zx)-1 :
+						i2 = ((len(self.channel._zx)//self.smooth)*self.smooth)
+					else:
+						i2 = i-self.smooth	
+			else:
+				if move == 'L':
+					if i == ((len(self.channel._zx)//self.smooth)*self.smooth):
+						i2 = len(self.channel._zx)-1
+					else:
+						i2 = i+self.smooth
+				if move == 'R':
+					if i == len(self.channel._zx)-1 :
+						i2 = ((len(self.channel._zx)//self.smooth)*self.smooth)
+					else:
+						i2 = i-self.smooth
+						
 			self.CHs[self.graph]._knickpoints.pop()
 			self.CHs[self.graph]._knickpoints.append(i2)
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
@@ -865,6 +888,8 @@ class TopopyProfiler:
 			self.Kaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_ksn()[kp],  color='r', ls='None', marker='X', ms=10)
 			# # Slope profile
 			self.Saxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_slope()[kp]*100,  color='r', ls='None', marker='X', ms=10)
+
+			self.Haxes.plot(self.hypsometric[kp], self.channel.get_z()[kp],  color='b', ls='None', marker='x', ms=10)
 		self.draw_graph()
 
 	def knick_buttons(self):
@@ -984,13 +1009,13 @@ class TopopyProfiler:
 					I = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()			
 				if type(self.Data[3]) == list:
 					if I >= self.Data[3][0]:
-						self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
-						self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
-						self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
+						self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I], self.channel.get_a()[I]])
+						self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1], self.channel.get_a()[I+1]])
+						self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2], self.channel.get_a()[I+2]])
 				else:
-					self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I]])
-					self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1]])
-					self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2]])
+					self.Data[2] = ([I, self.channel.get_z()[I], self.channel.get_chi()[I], self.channel.get_ksn()[I], self.channel.get_slope()[I], self.channel.get_a()[I]])
+					self.Data[1] = ([I+1, self.channel.get_z()[I+1], self.channel.get_chi()[I+1], self.channel.get_ksn()[I+1], self.channel.get_slope()[I+1], self.channel.get_a()[I+1]])
+					self.Data[0] = ([I+2, self.channel.get_z()[I+2], self.channel.get_chi()[I+2], self.channel.get_ksn()[I+2], self.channel.get_slope()[I+2], self.channel.get_a()[I+2]])
 				
 			if event.button == 3:
 				if graphic == 'D':
@@ -999,14 +1024,14 @@ class TopopyProfiler:
 					D = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()		
 				if type(self.Data[2]) == list:
 					if D <= self.Data[2][0]:
-						self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])
-						self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1]])
-						self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2]])
+						self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D], self.channel.get_a()[D]])
+						self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1], self.channel.get_a()[D+1]])
+						self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2], self.channel.get_a()[D+2]])
 
 				else:
-					self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D]])	
-					self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1]])
-					self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2]])
+					self.Data[3] = ([D, self.channel.get_z()[D],self.channel.get_chi()[D], self.channel.get_ksn()[D],self.channel.get_slope()[D], self.channel.get_a()[D]])	
+					self.Data[4] = ([D-1, self.channel.get_z()[D-1],self.channel.get_chi()[D-1], self.channel.get_ksn()[D-1],self.channel.get_slope()[D-1], self.channel.get_a()[D+1]])
+					self.Data[5] = ([D-2, self.channel.get_z()[D-2],self.channel.get_chi()[D-2], self.channel.get_ksn()[D-2],self.channel.get_slope()[D-2], self.channel.get_a()[D+2]])
 					
 		self.show_dam()
 		if (-1 in self.Data) == False:
@@ -1021,13 +1046,16 @@ class TopopyProfiler:
 			Kline = np.poly1d(Kfit)
 			Sfit = np.polyfit(Data[:,0], Data[:,4] ,1)
 			Sline = np.poly1d(Sfit)
+			Hfit = np.polyfit(Data[:,0], Data[:,5] ,1)
+			Hline = np.poly1d(Sfit)
 			
 			for n in np.arange((int(Data[3,0]+1)),(int(Data[2,0]-1))):
 				self.CHs[self.graph]._zx[n] = Zline(n)
 				self.CHs[self.graph]._chi[n] = Cline(n)
 				self.CHs[self.graph]._ksn[n] = Kline(n)
 				self.CHs[self.graph]._slp[n] = Sline(n)
-
+				self.CHs[self.graph]._ax[n] = Hline(n)
+				
 			self.show_dam()			
 			self.Data = [-1,-1,-1,-1,-1,-1]
 
@@ -1048,6 +1076,8 @@ class TopopyProfiler:
 			self.Kaxes.plot(self.channel.get_d(head=False)[d], self.channel.get_ksn()[d],  color='r', ls='None', marker='x', ms=10)
 			# # Slope profile
 			self.Saxes.plot(self.channel.get_d(head=False)[d], self.channel.get_slope()[d]*100,  color='r', ls='None', marker='x', ms=10)
+			
+			self.Haxes.plot(self.hypsometric[d], self.channel.get_z()[d], color='b', ls='None', marker='|', ms=10)
 		self.draw_graph()			
 
 	def lay_show(self, show):
@@ -1102,8 +1132,8 @@ class TopopyProfiler:
 				print(str(channel._proj))
 				
 				# Add fields
-				campos = ['id', 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope']
-				tipos = [0, 2, 2, 2, 2, 2, 2]
+				campos = ['id', 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope', 'area']
+				tipos = [0, 2, 2, 2, 2, 2, 2, 2]
 				id = 0
 				for n in range(len(campos)):
 					layer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))
@@ -1117,6 +1147,7 @@ class TopopyProfiler:
 					feat.SetField('rksn', float(channel._R2ksn[n]))
 					feat.SetField('slope', float(channel._slp[n]))
 					feat.SetField('rslope', float(channel._R2slp[n]))
+					feat.SetField('area', float(channel._ax[n]))
 					
 					# Create geometry
 					geom = ogr.Geometry(ogr.wkbPoint)
