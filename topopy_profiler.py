@@ -478,6 +478,7 @@ class TopopyProfiler:
 			self.chi_all = []
 
 	def smooth(self):
+		self.smooth = self.dockwidget.SmoothSpinBox.value()
 		if self.dockwidget.AllCheckBox.isChecked()==True:
 			self.all_channels()
 		else:
@@ -562,7 +563,6 @@ class TopopyProfiler:
 			
 		# Change channel
 		self.change_graph()
-		print(str(self.graph))	
 		
 	def go_graph(self):
 		''' Select a specific channel '''
@@ -601,11 +601,10 @@ class TopopyProfiler:
 		self.Saxes.plot(np.array(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]])), np.array(list(self.channel.get_slope()[::self.smooth])+list([self.channel.get_slope()[-1]]))*100,  color='0', ls='None', marker='.', ms=1)
 		self.Saxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))		
 		
-		areas = np.array(list(self.channel.get_a(head=False)[::self.smooth])+list([self.channel.get_a(head=False)[-1]]))
+		areas = self.channel.get_a(head=False)
 		sum_areas = sum(self.channel.get_a(head=False))
-		self.hypsometric = (np.cumsum(areas)/sum_areas)*100
-		print(str(sum_areas))
-		self.Haxes.plot(self.hypsometric, list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
+		self.hypsometric = ((np.cumsum(areas)/sum_areas)*100)
+		self.Haxes.plot(list(self.hypsometric[::self.smooth])+list([self.hypsometric[-1]]), list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
 		self.Haxes.set_xlim(xmin=min	(self.hypsometric), xmax=max(self.hypsometric))		
 	def all_channels(self):
 		'''Show all channels'''
@@ -637,11 +636,12 @@ class TopopyProfiler:
 				self.Saxes.plot(np.array(list(self.CHs[n].get_d(head=False)[::self.smooth])+list([self.CHs[n].get_d(head=False)[-1]])), np.array(list(self.CHs[n].get_slope()[::self.smooth])+list([self.CHs[n].get_slope()[-1]]))*100,  color=C, ls='None', marker='.', ms=1)
 				self.Saxes.set_xlim(xmin=0, xmax=max(self.d_all))
 
-				areas = np.array(list(self.CHs[n].get_a(head=False)[::self.smooth])+list([self.CHs[n].get_a(head=False)[-1]]))
+				areas = self.CHs[n].get_a(head=False)
 				sum_areas = sum(self.CHs[n].get_a(head=False))
-				hypsometric = (np.cumsum(areas)/sum_areas)*100
-				self.Haxes.plot(hypsometric, list(self.CHs[n].get_z()[::self.smooth])+list([self.CHs[n].get_z()[-1]]), color=C, ls='-', c='0.3', lw=1)
-				self.Haxes.set_xlim(xmin=0, xmax=max(hypsometric))
+				hypsometric = ((np.cumsum(areas)/sum_areas)*100)[::self.smooth]
+				self.Haxes.plot(hypsometric, list(self.CHs[n].get_z()[::self.smooth]), color=C, ls='-', c='0.3', lw=1)
+				self.Haxes.set_xlim(xmin=0, xmax=100)
+
 
 			# Show the profiles
 			self.draw_graph()
@@ -720,7 +720,9 @@ class TopopyProfiler:
 				if self.dockwidget.tabWidget.currentIndex() <=1:
 					self.dockwidget.DamButton.setEnabled(True)	
 				else:
-					self.dockwidget.DamButton.setEnabled(False)				
+					self.dockwidget.DamButton.setEnabled(False)			
+			else:
+				self.knick_buttons()
 
 	def move(self, event, graphic):
 		
@@ -781,8 +783,9 @@ class TopopyProfiler:
 			self.Scanvas.mpl_disconnect(self.Sknick)	
 			self.Hcanvas.mpl_disconnect(self.Hknick)	
 
-			self.dockwidget.verticalGroupBox.setEnabled(True)			
-			self.dockwidget.AllCheckBox.setEnabled(True)
+			self.dockwidget.verticalGroupBox.setEnabled(True)	
+			if len(self.CHs)>1:
+				self.dockwidget.AllCheckBox.setEnabled(True)
 			self.dockwidget.SaveButton.setEnabled(True)	
 			self.dockwidget.SaveComboBox.setEnabled(True)
 			self.dockwidget.FileLineEdit.setEnabled(True)	
@@ -803,19 +806,25 @@ class TopopyProfiler:
 
 	def knpoint(self, event, graphic):
 		if event.inaxes:
-			print('D: '+str(self.channel.get_d(head=False)[::self.smooth]))
-			if graphic == 'D':
-				if self.smooth == 1:
-					i = np.abs(list(self.channel.get_d(head=False))- event.xdata).argmin()
-				else:
-					S = list(self.channel.get_d(head=False))[::self.smooth][np.abs(list(self.channel.get_d(head=False))[::self.smooth] - event.xdata).argmin()]			
-					i = np.abs(list(self.channel.get_d(head=False)) - S).argmin()
-					print (S)
-			if graphic == 'C':
-				i = np.abs(list(self.channel.get_chi())[::self.smooth] - event.xdata).argmin()		
-			if graphic == 'H':
+			if self.smooth == 1:
+				if graphic == 'D':
+						i = np.abs(list(self.channel.get_d(head=False))- event.xdata).argmin()
+				if graphic == 'C':
+					i = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()		
+				if graphic == 'H':
 					i = np.abs(list(self.hypsometric)- event.xdata).argmin()				
-					
+
+			else:
+				if graphic == 'D':
+					S = list(self.channel.get_d(head=False))[::self.smooth][np.abs(list(self.channel.get_d(head=False))[::self.smooth] - event.xdata).argmin()]			
+					i = np.abs(list(self.channel.get_d(head=False)) - S).argmin()	
+				if graphic == 'C':
+					S = list(self.channel.get_chi())[::self.smooth][np.abs(list(self.channel.get_chi())[::self.smooth] - event.xdata).argmin()]			
+					i = np.abs(list(self.channel.get_chi()) - S).argmin()		
+					print(S)
+				if graphic == 'H':
+					S = list(self.hypsometric)[::self.smooth][np.abs(list(self.hypsometric)[::self.smooth] - event.xdata).argmin()]			
+					i = np.abs(list(self.hypsometric) - S).argmin()					
 			if event.button == 1:
 	
 				self.CHs[self.graph]._knickpoints.append(i)
@@ -826,7 +835,8 @@ class TopopyProfiler:
 
 					self.CHs[self.graph]._knickpoints.pop(i)
 
-			print('KPs: '+str(self.CHs[self.graph]._knickpoints))
+
+			
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 
 			self.show_knickpoints(self.channel)	
@@ -865,8 +875,6 @@ class TopopyProfiler:
 			self.CHs[self.graph]._knickpoints.append(i2)
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 			
-			print(str(self.CHs[self.graph]._knickpoints))				
-		
 			self.show_knickpoints(self.channel)		
 			self.knick_buttons()
 
@@ -878,8 +886,6 @@ class TopopyProfiler:
 		for kp in kpoints:
 			xy = channel.get_xy()[kp]
 			self.rubberknick.addPoint(QgsPointXY(xy[0], xy[1]))		
-			
-			print(str(list(self.channel.get_d(head=False))[kp])+ '/' + str(kp))	
 			
 			self.Eaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
 			# Chi profile
@@ -897,16 +903,30 @@ class TopopyProfiler:
 			self.dockwidget.RegButton.setEnabled(False)
 			self.dockwidget.DamButton.setEnabled(False)
 		else:
-			if self.channel._knickpoints[-1] == 0:
-				self.dockwidget.RegButton.setEnabled(True)
-				self.dockwidget.DamButton.setEnabled(False)
+			if self.dockwidget.tabWidget.currentIndex() == 4:
+				if self.channel._knickpoints[-1] == (len(self.channel._zx)-1):
+					self.dockwidget.RegButton.setEnabled(True)
+					self.dockwidget.DamButton.setEnabled(False)
 
-			elif self.channel._knickpoints[-1] == (len(self.channel._zx)-1):
-				self.dockwidget.RegButton.setEnabled(False)
-				self.dockwidget.DamButton.setEnabled(True)	
-			else:			
-				self.dockwidget.RegButton.setEnabled(True)
-				self.dockwidget.DamButton.setEnabled(True)
+				elif self.channel._knickpoints[-1] <= 0:
+					self.channel._knickpoints[-1] = 0
+					self.dockwidget.RegButton.setEnabled(False)
+					self.dockwidget.DamButton.setEnabled(True)	
+				else:			
+					self.dockwidget.RegButton.setEnabled(True)
+					self.dockwidget.DamButton.setEnabled(True)			
+			else:
+				if self.channel._knickpoints[-1] == 0:
+					self.dockwidget.RegButton.setEnabled(True)
+					self.dockwidget.DamButton.setEnabled(False)
+
+				elif self.channel._knickpoints[-1] == (len(self.channel._zx)-1):
+					self.dockwidget.RegButton.setEnabled(False)
+					self.dockwidget.DamButton.setEnabled(True)	
+				else:			
+					self.dockwidget.RegButton.setEnabled(True)
+					self.dockwidget.DamButton.setEnabled(True)
+		print(self.channel._knickpoints)
 
 	def regression(self):
 		if self.dockwidget.RegButton.isChecked():	
@@ -983,7 +1003,6 @@ class TopopyProfiler:
 			self.Data = [-1,-1,-1,-1,-1,-1]
 			self.Edam = self.Ecanvas.mpl_connect('button_press_event', lambda event: self.dam(event, 'D'))
 			self.Cdam = self.Ccanvas.mpl_connect('button_press_event', lambda event: self.dam(event, 'C'))
-			print(str(self.Data))
 			self.iface.mainWindow().statusBar().showMessage( 'Left Point: Left click / Rigth Point: Rigth Click')	
 		if self.dockwidget.DamButton.isChecked() == False:	
 			self.dockwidget.verticalGroupBox.setEnabled(True)
@@ -1036,7 +1055,6 @@ class TopopyProfiler:
 		self.show_dam()
 		if (-1 in self.Data) == False:
 			Data = np.array(self.Data)
-			print(str(Data[1,0]-1))
 
 			Zfit = np.polyfit(Data[:,0], Data[:,1] ,1)
 			Zline = np.poly1d(Zfit)
@@ -1128,8 +1146,6 @@ class TopopyProfiler:
 				sp = osr.SpatialReference()
 				sp.ImportFromWkt(channel._proj)
 				layer = dataset.CreateLayer('Knickpoints', sp, ogr.wkbPoint)
-
-				print(str(channel._proj))
 				
 				# Add fields
 				campos = ['id', 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope', 'area']
