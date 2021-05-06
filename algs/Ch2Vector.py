@@ -84,35 +84,43 @@ class Channel2Vector(QgsProcessingAlgorithm):
 		"""
 		filename = self.parameterAsFile(parameters, self.INPUT_CHs, context)
 		output_ch = self.parameterAsOutputLayer(parameters, self.OUTPUT_CHs, context)
-		output_kp = self.parameterAsOutputLayer(parameters, self.OUTPUT_KPs, context)
 		
 		Channels =  np.load(str(filename), allow_pickle=True)
 		# Create shapefile
 		driver = ogr.GetDriverByName("ESRI Shapefile")
 		dataset = driver.CreateDataSource(output_ch)
-		kpdataset = driver.CreateDataSource(output_kp)
+
 		sp = osr.SpatialReference()
-		feedback.setProgressText(str(Channels))
-		feedback.setProgressText(str(Channels[0]._proj))
-		# sp.ImportFromWkt(Channels[0]._proj)	
-		# layer = dataset.CreateLayer("Channels", sp, geom_type=ogr.wkbLineString)
-		layer = dataset.CreateLayer("Channels",  geom_type=ogr.wkbLineString)
-		kplayer = kpdataset.CreateLayer("Knickpoints",  geom_type=ogr.wkbPoint)		
+		sp.ImportFromWkt(Channels[0]._proj)	
+		layer = dataset.CreateLayer("Channels", sp, geom_type=ogr.wkbLineString25D)
 		
 		# Add fields
 		campos = ["id_profile", "L", "area_e6", "z", "chi", "ksn", "slope"]
 		tipos = [0, 2, 2, 2, 2, 2, 2]
 		for n in range(len(campos)):
 			layer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))
-
-		campos = ['id', 'channel', 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope']
-		tipos = [0, 0, 2, 2, 2, 2, 2, 2]
-		for n in range(len(campos)):
-			kplayer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))
 			
 		id = 0
 		unic = []
 		id_profile = 0
+		
+		KP = False
+		for CH in Channels:
+			if len(CH._knickpoints) > 0:
+				KP = True
+				
+		if KP == True:
+			output_kp = self.parameterAsOutputLayer(parameters, self.OUTPUT_KPs, context)
+			kpdataset = driver.CreateDataSource(output_kp)
+			kplayer = kpdataset.CreateLayer("Knickpoints", sp, geom_type=ogr.wkbPoint25D)	
+			
+			campos = ['id', 'channel', 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope']
+			tipos = [0, 0, 2, 2, 2, 2, 2, 2]
+			for n in range(len(campos)):
+				kplayer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))	
+		else:
+			feedback.setProgressText('**This channel file does not have Knickpoints**')
+	
 		for CH in Channels:
 			id_profile += 1
 			ind = 0
@@ -132,8 +140,7 @@ class Channel2Vector(QgsProcessingAlgorithm):
 						slope = np.mean([CH._slp[ind], CH._slp[ind+1]])
 						ksn = np.mean([CH._ksn[ind],CH._ksn[ind+1]])
 						area = np.mean([CH._ax[ind],CH._ax[ind+1]])
-						
-						# Create feature and add attributes
+
 						feat = ogr.Feature(layer.GetLayerDefn())
 						feat.SetField("id_profile", int(id_profile))
 						feat.SetField("L", float(dx))
@@ -144,9 +151,9 @@ class Channel2Vector(QgsProcessingAlgorithm):
 						feat.SetField("slope", float(slope))
 						
 						# Create geometry
-						geom = ogr.Geometry(ogr.wkbLineString)
-						geom.AddPoint(XY[ind][0], XY[ind][1])
-						geom.AddPoint(XY[ind+1][0],XY[ind+1][1])
+						geom = ogr.Geometry(ogr.wkbLineString25D)
+						geom.AddPoint(XY[ind][0], XY[ind][1], CH._zx[ind])
+						geom.AddPoint(XY[ind+1][0],XY[ind+1][1], CH._zx[ind+1])
 						unic.append(tuple(XY[ind]))
 					
 					feat.SetGeometry(geom)
@@ -159,32 +166,27 @@ class Channel2Vector(QgsProcessingAlgorithm):
 					processing = False
 					continue
 					
-
-				# Create shapefile
-				# driver = ogr.GetDriverByName('ESRI Shapefile')
-				# dataset = driver.CreateDataSource(output_kp)
-				# sp = osr.SpatialReference()
-				# sp.ImportFromWkt(channel._proj)
-				# kplayer = dataset.CreateLayer('Knickpoints', sp, ogr.wkbPoint)
-				
-			for n in CH._knickpoints:
-				id +=1
-				feat = ogr.Feature(kplayer.GetLayerDefn())
-				feat.SetField('id', int(id))
-				feat.SetField('channel', int(id_profile))					
-				feat.SetField('z', float(CH._zx[n]))
-				feat.SetField('chi', float(CH._chi[n]))
-				feat.SetField('ksn', float(CH._ksn[n]))
-				feat.SetField('rksn', float(CH._R2ksn[n]))
-				feat.SetField('slope', float(CH._slp[n]))
-				feat.SetField('rslope', float(CH._R2slp[n]))
-				
-				# Create geometry
-				geom = ogr.Geometry(ogr.wkbPoint)
-				geom.AddPoint(CH.get_xy()[n][0], CH.get_xy()[n][1])
-				feat.SetGeometry(geom)			
-				kplayer.CreateFeature(feat)
+			if KP == True:
+				for n in CH._knickpoints:
+					id +=1
+					feat = ogr.Feature(kplayer.GetLayerDefn())
+					feat.SetField('id', int(id))
+					feat.SetField('channel', int(id_profile))					
+					feat.SetField('z', float(CH._zx[n]))
+					feat.SetField('chi', float(CH._chi[n]))
+					feat.SetField('ksn', float(CH._ksn[n]))
+					feat.SetField('rksn', float(CH._R2ksn[n]))
+					feat.SetField('slope', float(CH._slp[n]))
+					feat.SetField('rslope', float(CH._R2slp[n]))
 					
-		
-		results = {self.OUTPUT_CHs : output_ch, self.OUTPUT_KPs : output_kp, }
+					# Create geometry
+					geom = ogr.Geometry(ogr.wkbPoint25D)
+					geom.AddPoint(CH.get_xy()[n][0], CH.get_xy()[n][1], CH._zx[n])
+					feat.SetGeometry(geom)			
+					kplayer.CreateFeature(feat)
+						
+		if KP == True:
+			results = {self.OUTPUT_CHs : output_ch, self.OUTPUT_KPs : output_kp, }
+		else:
+			results = {self.OUTPUT_CHs : output_ch, }			
 		return results
