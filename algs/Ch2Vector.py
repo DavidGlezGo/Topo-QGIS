@@ -91,7 +91,7 @@ class Channel2Vector(QgsProcessingAlgorithm):
 		driver = ogr.GetDriverByName("ESRI Shapefile")
 		dataset = driver.CreateDataSource(output_ch)
 		kpdataset = driver.CreateDataSource(output_kp)
-		sp = osr.SpatialReference
+		sp = osr.SpatialReference()
 		feedback.setProgressText(str(Channels))
 		feedback.setProgressText(str(Channels[0]._proj))
 		# sp.ImportFromWkt(Channels[0]._proj)	
@@ -105,7 +105,7 @@ class Channel2Vector(QgsProcessingAlgorithm):
 		for n in range(len(campos)):
 			layer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))
 
-		campos = ['id', 'channel' 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope']
+		campos = ['id', 'channel', 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope']
 		tipos = [0, 0, 2, 2, 2, 2, 2, 2]
 		for n in range(len(campos)):
 			kplayer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))
@@ -167,23 +167,23 @@ class Channel2Vector(QgsProcessingAlgorithm):
 				# sp.ImportFromWkt(channel._proj)
 				# kplayer = dataset.CreateLayer('Knickpoints', sp, ogr.wkbPoint)
 				
-				for n in CH._knickpoints:
-					id +=1
-					feat = ogr.Feature(kplayer.GetLayerDefn())
-					feat.SetField('id', int(id))
-					feat.SetField('channel', int(id_profile))					
-					feat.SetField('z', float(CH._zx[n]))
-					feat.SetField('chi', float(CH._chi[n]))
-					feat.SetField('ksn', float(CH._ksn[n]))
-					feat.SetField('rksn', float(CH._R2ksn[n]))
-					feat.SetField('slope', float(CH._slp[n]))
-					feat.SetField('rslope', float(CH._R2slp[n]))
-					
-					# Create geometry
-					geom = ogr.Geometry(ogr.wkbPoint)
-					geom.AddPoint(CH.get_xy()[n][0], CH.get_xy()[n][1])
-					feat.SetGeometry(geom)			
-					kplayer.CreateFeature(feat)
+			for n in CH._knickpoints:
+				id +=1
+				feat = ogr.Feature(kplayer.GetLayerDefn())
+				feat.SetField('id', int(id))
+				feat.SetField('channel', int(id_profile))					
+				feat.SetField('z', float(CH._zx[n]))
+				feat.SetField('chi', float(CH._chi[n]))
+				feat.SetField('ksn', float(CH._ksn[n]))
+				feat.SetField('rksn', float(CH._R2ksn[n]))
+				feat.SetField('slope', float(CH._slp[n]))
+				feat.SetField('rslope', float(CH._R2slp[n]))
+				
+				# Create geometry
+				geom = ogr.Geometry(ogr.wkbPoint)
+				geom.AddPoint(CH.get_xy()[n][0], CH.get_xy()[n][1])
+				feat.SetGeometry(geom)			
+				kplayer.CreateFeature(feat)
 					
 		
 		results = {self.OUTPUT_CHs : output_ch, self.OUTPUT_KPs : output_kp, }
