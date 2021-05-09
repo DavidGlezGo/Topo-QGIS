@@ -457,6 +457,7 @@ class TopopyProfiler:
 			self.dockwidget.KnickButton.setEnabled(True)
 			self.dockwidget.SaveButton.setEnabled(True)	
 			self.dockwidget.SaveComboBox.setEnabled(True)	
+			self.dockwidget.AllCheckBox.setChecked(False)
 
 			if len(self.CHs)>1:
 				self.dockwidget.NextButton.setEnabled(True)	
@@ -468,7 +469,7 @@ class TopopyProfiler:
 				self.dockwidget.GoButton.setEnabled(False)
 				self.dockwidget.GoSpinBox.setEnabled(False)
 				self.dockwidget.AllCheckBox.setEnabled(False)
-				self.dockwidget.AllCheckBox.setChecked(False)
+
 		
 			self.iface.mainWindow().statusBar().showMessage( '' )
 
@@ -605,7 +606,7 @@ class TopopyProfiler:
 		sum_areas = sum(self.channel.get_a(head=False))
 		self.hypsometric = ((np.cumsum(areas)/sum_areas)*100)
 		self.Haxes.plot(list(self.hypsometric[::self.smooth])+list([self.hypsometric[-1]]), list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
-		self.Haxes.set_xlim(xmin=min	(self.hypsometric), xmax=max(self.hypsometric))		
+		self.Haxes.set_xlim(xmin=0, xmax=max(self.hypsometric))		
 	def all_channels(self):
 		'''Show all channels'''
 		if self.dockwidget.AllCheckBox.isChecked()==True:
@@ -848,28 +849,47 @@ class TopopyProfiler:
 
 			# if len(self.CHs[self.graph]._knickpoints) > 0:
 			i = self.CHs[self.graph]._knickpoints[-1]
-			if self.dockwidget.tabWidget.currentIndex() == 4:
-				if move == 'R':
-					if i == ((len(self.channel._zx)//self.smooth)*self.smooth):
-						i2 = len(self.channel._zx)-1
-					else:
-						i2 = i+self.smooth
-				if move == 'L':
-					if i == len(self.channel._zx)-1 :
-						i2 = ((len(self.channel._zx)//self.smooth)*self.smooth)
-					else:
-						i2 = i-self.smooth	
-			else:
-				if move == 'L':
-					if i == ((len(self.channel._zx)//self.smooth)*self.smooth):
-						i2 = len(self.channel._zx)-1
-					else:
-						i2 = i+self.smooth
-				if move == 'R':
-					if i == len(self.channel._zx)-1 :
-						i2 = ((len(self.channel._zx)//self.smooth)*self.smooth)
-					else:
+			print(self.channel.get_chi()[i] in self.channel.get_chi()[::self.smooth])
+			if (self.channel.get_chi()[i] in self.channel.get_chi()[::self.smooth]) == False:
+				S = list(self.channel.get_chi())[::self.smooth][np.abs(list(self.channel.get_chi())[::self.smooth] - self.channel.get_chi()[i]).argmin()]
+				i = np.abs(list(self.channel.get_chi()) - S).argmin()	
+				print(S)
+				
+				if (S- self.channel.get_chi()[i]).argmin() < 0:		
+					if move == 'R':
+						i2 = i
+					if move == 'L':
+						i2 = i+self.smooth		
+
+				else:
+					if move == 'R':
 						i2 = i-self.smooth
+
+					if move == 'L':
+						i2 = i						
+			else:
+				if self.dockwidget.tabWidget.currentIndex() == 4:
+					if move == 'R':
+						if i == ((len(self.channel._zx)//self.smooth)*self.smooth):
+							i2 = len(self.channel._zx)-1
+						else:
+							i2 = i+self.smooth
+					if move == 'L':
+						if i == len(self.channel._zx)-1 :
+							i2 = ((len(self.channel._zx)//self.smooth)*self.smooth)
+						else:
+							i2 = i-self.smooth	
+				else:
+					if move == 'L':
+						if i == ((len(self.channel._zx)//self.smooth)*self.smooth):
+							i2 = len(self.channel._zx)-1
+						else:
+							i2 = i+self.smooth
+					if move == 'R':
+						if i == len(self.channel._zx)-1 :
+							i2 = ((len(self.channel._zx)//self.smooth)*self.smooth)
+						else:
+							i2 = i-self.smooth
 						
 			self.CHs[self.graph]._knickpoints.pop()
 			self.CHs[self.graph]._knickpoints.append(i2)
