@@ -688,7 +688,7 @@ class Network(PRaster):
         dataset = driver.CreateDataSource(path)
         sp = osr.SpatialReference()
         sp.ImportFromWkt(self._proj)
-        layer = dataset.CreateLayer("rivers", sp, ogr.wkbLineString)
+        layer = dataset.CreateLayer("rivers", sp, ogr.wkbLineString25D)
         layer.CreateField(ogr.FieldDefn("segid", ogr.OFTInteger))
         layer.CreateField(ogr.FieldDefn("strahler", ogr.OFTInteger))
         layer.CreateField(ogr.FieldDefn("shreeve", ogr.OFTInteger))        
@@ -700,7 +700,7 @@ class Network(PRaster):
         ch_shre = self.get_stream_orders(kind='shreeve', asgrid=False).ravel()    
         ch_seg = ch_seg[self._ix]
         ch_stra = ch_stra[self._ix]
-        ch_shre = ch_shre[self._ix]       
+        ch_shre = ch_shre[self._ix] 
          
         # Get ixcix auxiliar array
         ixcix = np.zeros(self.get_ncells(), np.int)
@@ -738,10 +738,19 @@ class Network(PRaster):
             row, col = self.ind_2_cell(ch_ix)
             xi, yi = self.cell_2_xy(row, col)
             
-            geom = ogr.Geometry(ogr.wkbLineString)
+            print('ch_ix: '+str(ch_ix))
+            pos = ixcix[ch_ix]
+            print('pos: '+str(pos))
+            zi = self._zx[pos]
+            print('Z: '+str(zi))
+            print('AAAAA')
+            print(len(xi))
+            print(len(zi))
+            geom = ogr.Geometry(ogr.wkbLineString25D)
             
             for n in range(xi.size):
-                geom.AddPoint(xi[n], yi[n])
+                
+                geom.AddPoint(xi[n], yi[n], zi[n])
                 
             feat.SetGeometry(geom)
             layer.CreateFeature(feat)
