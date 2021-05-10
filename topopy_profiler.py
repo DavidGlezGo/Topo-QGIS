@@ -458,12 +458,17 @@ class TopopyProfiler:
 			self.dockwidget.SaveButton.setEnabled(True)	
 			self.dockwidget.SaveComboBox.setEnabled(True)	
 			self.dockwidget.AllCheckBox.setChecked(False)
+			self.dockwidget.LayCursorCheckBox.setEnabled(True)			
+			self.dockwidget.LayStreamCheckBox.setEnabled(True)			
+			self.dockwidget.LayKpCheckBox.setEnabled(True)			
+			self.dockwidget.GraphRegCheckBox.setEnabled(True)	
 
 			if len(self.CHs)>1:
 				self.dockwidget.NextButton.setEnabled(True)	
 				self.dockwidget.GoButton.setEnabled(True)
 				self.dockwidget.GoSpinBox.setEnabled(True)
 				self.dockwidget.AllCheckBox.setEnabled(True)
+
 			else:
 				self.dockwidget.NextButton.setEnabled(False)	
 				self.dockwidget.GoButton.setEnabled(False)
@@ -656,6 +661,10 @@ class TopopyProfiler:
 			self.dockwidget.KnickButton.setEnabled(False)	
 			self.dockwidget.RegButton.setEnabled(False)
 			self.dockwidget.DamButton.setEnabled(False)
+			self.dockwidget.LayCursorCheckBox.setEnabled(False)			
+			self.dockwidget.LayStreamCheckBox.setEnabled(False)			
+			self.dockwidget.LayKpCheckBox.setEnabled(False)			
+			self.dockwidget.GraphRegCheckBox.setEnabled(False)			
 			
 			self.Ecanvas.mpl_disconnect(self.Epoint)
 			self.Ccanvas.mpl_disconnect(self.Cpoint)
@@ -680,6 +689,10 @@ class TopopyProfiler:
 			self.dockwidget.KnickButton.setEnabled(True)
 			self.dockwidget.RegButton.setEnabled(True)
 			self.dockwidget.DamButton.setEnabled(True)
+			self.dockwidget.LayCursorCheckBox.setEnabled(True)			
+			self.dockwidget.LayStreamCheckBox.setEnabled(True)			
+			self.dockwidget.LayKpCheckBox.setEnabled(True)			
+			self.dockwidget.GraphRegCheckBox.setEnabled(True)		
 
 	def clear_graph(self):
 		''' Clear all graphs '''
