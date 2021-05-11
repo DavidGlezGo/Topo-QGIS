@@ -96,17 +96,18 @@ class TopopyProfiler:
 		# Set all layouts		
 		LayoutsParam = matplotlib.figure.SubplotParams(left=0.05, bottom=0.19, right=0.99, top=0.98)
 		
-		self.Ecanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
-		self.Ccanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
-		self.Kcanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
-		self.Scanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
-		self.Hcanvas = FigureCanvas(Figure(subplotpars = LayoutsParam))
+		self.Ecanvas = FigureCanvas(Figure(tight_layout=True, subplotpars = LayoutsParam))
+		self.Ccanvas = FigureCanvas(Figure(tight_layout=True, subplotpars = LayoutsParam))
+		self.Kcanvas = FigureCanvas(Figure(tight_layout=True, subplotpars = LayoutsParam))
+		self.Scanvas = FigureCanvas(Figure(tight_layout=True, subplotpars = LayoutsParam))
+		self.Hcanvas = FigureCanvas(Figure(tight_layout=True, subplotpars = LayoutsParam))
 		
 		self.Eaxes = self.Ecanvas.figure.add_subplot()
 		self.Caxes = self.Ccanvas.figure.add_subplot()
 		self.Kaxes = self.Kcanvas.figure.add_subplot()
 		self.Saxes = self.Scanvas.figure.add_subplot()
 		self.Haxes = self.Hcanvas.figure.add_subplot()
+		
 		
 		self.ElevLayout = self.dockwidget.ElevProf.layout()
 		self.ChiLayout = self.dockwidget.ChiProf.layout()
@@ -724,6 +725,13 @@ class TopopyProfiler:
 		self.Hcanvas.draw()
 
 	def tabs(self):
+		
+		w = self.dockwidget.dockWidgetContents.geometry().width()
+		h = self.dockwidget.dockWidgetContents.geometry().height()
+		
+		self.dockwidget.dockWidgetContents.resize((w+1), (h+1))
+		self.dockwidget.dockWidgetContents.resize((w-1), (h-1))
+			
 		if len(self.CHs) != 0:
 			if self.dockwidget.KnickButton.isChecked()==False:
 				if self.dockwidget.tabWidget.currentIndex() == 1:
@@ -786,6 +794,11 @@ class TopopyProfiler:
 			self.dockwidget.RegButton.setText('<')
 			self.dockwidget.DamButton.setText('>')
 
+			self.Ecanvas.figure.set_tight_layout(False)
+			self.Ccanvas.figure.set_tight_layout(False)
+			self.Kcanvas.figure.set_tight_layout(False)
+			self.Scanvas.figure.set_tight_layout(False)
+			self.Hcanvas.figure.set_tight_layout(False)
 
 			self.knick_buttons()
 		
@@ -817,6 +830,12 @@ class TopopyProfiler:
 			self.dockwidget.RegButton.clicked.connect(self.regression)
 			self.dockwidget.DamButton.setText('Remove Dam')			
 			self.dockwidget.DamButton.clicked.connect(self.remove_dam)
+
+			self.Ecanvas.figure.set_tight_layout(True)
+			self.Ccanvas.figure.set_tight_layout(True)
+			self.Kcanvas.figure.set_tight_layout(True)
+			self.Scanvas.figure.set_tight_layout(True)
+			self.Hcanvas.figure.set_tight_layout(True)
 
 	def knpoint(self, event, graphic):
 		if event.inaxes:
@@ -1037,6 +1056,13 @@ class TopopyProfiler:
 			self.Edam = self.Ecanvas.mpl_connect('button_press_event', lambda event: self.dam(event, 'D'))
 			self.Cdam = self.Ccanvas.mpl_connect('button_press_event', lambda event: self.dam(event, 'C'))
 			self.iface.mainWindow().statusBar().showMessage( 'Left Point: Left click / Rigth Point: Rigth Click')	
+			
+			self.Ecanvas.figure.set_tight_layout(False)
+			self.Ccanvas.figure.set_tight_layout(False)
+			self.Kcanvas.figure.set_tight_layout(False)
+			self.Scanvas.figure.set_tight_layout(False)
+			self.Hcanvas.figure.set_tight_layout(False)			
+			
 		if self.dockwidget.DamButton.isChecked() == False:	
 			self.dockwidget.verticalGroupBox.setEnabled(True)
 			self.lay_show('K')
@@ -1050,6 +1076,12 @@ class TopopyProfiler:
 			self.Ecanvas.mpl_disconnect(self.Edam)
 			self.Ccanvas.mpl_disconnect(self.Cdam)
 			self.iface.mainWindow().statusBar().showMessage('')	
+			
+			self.Ecanvas.figure.set_tight_layout(True)
+			self.Ccanvas.figure.set_tight_layout(True)
+			self.Kcanvas.figure.set_tight_layout(True)
+			self.Scanvas.figure.set_tight_layout(True)
+			self.Hcanvas.figure.set_tight_layout(True)
 		
 	def dam(self, event, graphic):
 		if event.inaxes:
