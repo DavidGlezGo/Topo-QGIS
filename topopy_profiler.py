@@ -126,6 +126,8 @@ class TopopyProfiler:
 		
 		self.CHs=[]
 
+		self.regAct = False
+
 		# Set the properties of the temporary layer
 		self.rubberband = QgsRubberBand(self.iface.mapCanvas(), False)
 		self.rubberband.setWidth(2)
@@ -168,7 +170,8 @@ class TopopyProfiler:
 		self.dockwidget.LayCursorCheckBox.clicked.connect(lambda:self.lay_show('C'))		
 		self.dockwidget.LayStreamCheckBox.clicked.connect(lambda:self.lay_show('S'))	
 		self.dockwidget.LayKpCheckBox.clicked.connect(lambda:self.lay_show('K'))	
-
+		self.dockwidget.GraphRegCheckBox.clicked.connect(lambda:self.lay_show('R'))	
+		
 		self.dockwidget.SmoothButton.clicked.connect(self.smooth)
 		self.dockwidget.tabWidget.currentChanged.connect(self.tabs)
 
@@ -306,6 +309,8 @@ class TopopyProfiler:
 		self.dockwidget.SaveButton.setEnabled(False)	
 		self.dockwidget.SaveComboBox.setEnabled(False)	
 		self.dockwidget.verticalGroupBox.setEnabled(True)
+
+		self.regAct = False
 
 		try:
 			self.Ecanvas.mpl_disconnect(self.Epoint)
@@ -688,7 +693,6 @@ class TopopyProfiler:
 			self.dockwidget.GoButton.setEnabled(True)
 			self.dockwidget.GoSpinBox.setEnabled(True)
 			self.dockwidget.KnickButton.setEnabled(True)
-			self.dockwidget.RegButton.setEnabled(True)
 			self.dockwidget.DamButton.setEnabled(True)
 			self.dockwidget.LayCursorCheckBox.setEnabled(True)			
 			self.dockwidget.LayStreamCheckBox.setEnabled(True)			
@@ -739,7 +743,9 @@ class TopopyProfiler:
 				else:
 					self.dockwidget.RegButton.setEnabled(False)
 
-				if self.dockwidget.tabWidget.currentIndex() <=1:
+				if self.dockwidget.tabWidget.currentIndex() <=1 and self.regAct == False:
+					self.dockwidget.DamButton.setEnabled(True)	
+				elif self.dockwidget.tabWidget.currentIndex() ==1 and self.regAct == True:
 					self.dockwidget.DamButton.setEnabled(True)	
 				else:
 					self.dockwidget.DamButton.setEnabled(False)			
@@ -871,8 +877,8 @@ class TopopyProfiler:
 
 			
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
-
-			self.show_knickpoints(self.channel)	
+			
+			self.lay_show('K')
 
 		self.knick_buttons()		
 
@@ -926,15 +932,12 @@ class TopopyProfiler:
 			self.CHs[self.graph]._knickpoints.pop()
 			self.CHs[self.graph]._knickpoints.append(i2)
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)
-			
-			self.show_knickpoints(self.channel)		
+
+			self.lay_show('K')
 			self.knick_buttons()
 
 	def show_knickpoints(self, channel):
-		print('S_KP')
 		kpoints = channel._knickpoints		
-		self.clear_graph()
-		self.single_channels()
 		for kp in kpoints:
 			xy = channel.get_xy()[kp]
 			self.rubberknick.addPoint(QgsPointXY(xy[0], xy[1]))		
@@ -982,67 +985,119 @@ class TopopyProfiler:
 
 	def regression(self):
 		if self.dockwidget.RegButton.isChecked():	
+			self.iface.mainWindow().statusBar().showMessage( 'Left Point: Left click / Rigth Point: Rigth Click')	
+
+			self.dockwidget.NextButton.setEnabled(False)
+			self.dockwidget.PrevButton.setEnabled(False)
 			self.dockwidget.KnickButton.setEnabled(False)
-			self.dockwidget.DamButton.setEnabled(False)
+			self.dockwidget.verticalGroupBox.setEnabled(False)			
+			self.dockwidget.AllCheckBox.setEnabled(False)
+			self.dockwidget.SaveButton.setEnabled(False)	
+			self.dockwidget.SaveComboBox.setEnabled(False)				
+			self.dockwidget.FileLineEdit.setEnabled(False)	
+			self.dockwidget.PathButton.setEnabled(False)	
+			self.dockwidget.AddButton.setEnabled(False)	
+
+			try:
+				self.dockwidget.DamButton.clicked.disconnect(self.remove_dam)
+			except:
+				None
+
+			self.dockwidget.DamButton.setText('Remove Reg')
+			self.dockwidget.DamButton.setCheckable(False)
+			self.dockwidget.DamButton.clicked.connect(self.remove_reg)
+			if len(self.CHs[self.graph]._regressions) == 0:
+				self.dockwidget.DamButton.setEnabled(False)
 			
-			# self.RData = [-1,-1]			
-			# self.CReg = self.Ccanvas.mpl_connect('button_press_event', self.reg)			
-		if not self.dockwidget.RegButton.isChecked():	
+			
+			self.regAct = True
+			self.RData = [-1,-1]			
+			self.CReg = self.Ccanvas.mpl_connect('button_press_event', self.reg)	
+			self.Ccanvas.figure.set_tight_layout(False)	
+	
+		if self.dockwidget.RegButton.isChecked() == False:	
+			self.iface.mainWindow().statusBar().showMessage('')	
+
+			# self.change_graph()
+			if self.graph < (len(self.CHs)-1):
+				self.dockwidget.NextButton.setEnabled(True)
+			if self.graph > 0:
+				self.dockwidget.PrevButton.setEnabled(True)
+
 			self.dockwidget.KnickButton.setEnabled(True)
 			self.dockwidget.DamButton.setEnabled(True)
 
-			# self.Ecanvas.mpl_disconnect(self.CReg)
-			
-		self.iface.mainWindow().statusBar().showMessage( 'REGRESSION in development')			
-	
-	# def reg(self, event):
-		# if event.inaxes:
-	
-			# if event.button == 1:
-				# self.RData[1] = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()	
-					
-			
-			# if event.button == 3:			
-				# self.RData[0] = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()	
+			self.dockwidget.verticalGroupBox.setEnabled(True)	
+			if len(self.CHs)>1:
+				self.dockwidget.AllCheckBox.setEnabled(True)
+			self.dockwidget.SaveButton.setEnabled(True)	
+			self.dockwidget.SaveComboBox.setEnabled(True)
+			self.dockwidget.FileLineEdit.setEnabled(True)	
+			self.dockwidget.PathButton.setEnabled(True)	
+			self.dockwidget.AddButton.setEnabled(True)	
 
-				
-		# if (-1 in self.RData) == False:		
-			# print(self.RData[0])
-			# print(self.RData[1])
-			# print(self.channel._zx[self.RData[0]:self.RData[1]])
-			# # print(str(np.arange(self.RData[0],self.RData[1])))
-			# Sfit = np.polyfit(self.channel.get_chi()[self.RData[0]:self.RData[1]], self.channel._zx[self.RData[0]:self.RData[1]] ,1)	
-			# R =list(Sfit)
-			# R.extend(self.RData)
-			# self.CHs[self.graph]._knickpoints.append(R)	
-			# print(self.CHs[self.graph]._knickpoints)
-			# self.RData = [-1,-1]
-			# self.show_reg()
-		# print(self.RData)
-		
-	# def show_reg(self):
-		# self.clear_graph()
-		# print(0)
-		# self.single_channels()
-		# # Chi profile
-		# reg = self.CHs[self.graph]._knickpoints
-		# print(1)
-		
-		# for r in range(len(reg)):
-			# # G = []
-			# # for n in np.arange(reg[r][2], reg[r][3]):
+			self.dockwidget.DamButton.setText('Remove Dam')			
+			self.dockwidget.DamButton.clicked.connect(self.remove_dam)
+			self.dockwidget.DamButton.setCheckable(True)
 			
-				# # G.append([(reg[r][0]+reg[r][1]*n),n])
-			# # print(G)
-			# print(reg[r][2])
-			# self.Caxes.plot(self.channel.get_chi()[reg[r][2]:reg[r][3]], (reg[r][0]+reg[r][1]*self.channel.get_chi()[reg[r][2]:reg[r][3]]), color='b', ls='-', c='0.3', lw=1)	
-			# print(reg[r])
-			# self.draw_graph()
-		# print(2)
+			
+			self.regAct = False
+
+			self.Ccanvas.mpl_disconnect(self.CReg)
+			self.Ccanvas.figure.set_tight_layout(True)		
+	
+	def reg(self, event):
+		if event.inaxes:
+	
+			if event.button == 1:
+				self.RData[1] = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()	
+			
+			if event.button == 3:			
+				self.RData[0] = np.abs(list(self.channel.get_chi()) - event.xdata).argmin()	
+				
+		if (-1 in self.RData):
+			for rd in self.RData:
+				self.Caxes.plot(self.channel.get_chi()[rd], self.channel.get_z()[rd], color='b', ls='None', marker='|', ms=10)		
+			self.draw_graph()
+			self.tabs()
+				
+		if (-1 in self.RData) == False:		
+			Sfit = np.polyfit(self.channel.get_chi()[self.RData[0]:self.RData[1]][::-1], self.channel._zx[self.RData[0]:self.RData[1]][::-1] ,1)	
+			R =list(Sfit[::-1])
+			R.extend((self.channel.get_chi()[self.RData[1]],self.channel.get_chi()[self.RData[0]]))
+			self.CHs[self.graph]._regressions.append(R)	
+			print(self.CHs[self.graph]._regressions)
+			print(str(self.channel._zx[self.RData[0]])+', '+str(self.channel._zx[self.RData[1]]))
+			self.RData = [-1,-1]
+
+			self.lay_show('R')
+
+		if len(self.CHs[self.graph]._regressions) == 0:
+			self.dockwidget.DamButton.setEnabled(False)
+		print(self.RData)
+
+	def remove_reg(self):
+		if len(self.CHs[self.graph]._regressions) > 0:
+			self.CHs[self.graph]._regressions.pop()
+			self.lay_show('R')
+			if len(self.CHs[self.graph]._regressions) == 0:
+				self.dockwidget.DamButton.setEnabled(False)
+		
+	def show_reg(self, channel):
+
+		reg = channel._regressions		
+		for r in range(len(reg)):
+			chi = reg[r][2:4]
+			z = []
+			for c in chi:
+				result = reg[r][0]+reg[r][1]*c
+				z.append(result)
+			self.Caxes.plot(chi, z, color='b', ls='-', c='0.3', lw=1)	
 	def remove_dam(self):
 	
 		if self.dockwidget.DamButton.isChecked() == True:	
-			
+			self.dockwidget.NextButton.setEnabled(False)
+			self.dockwidget.PrevButton.setEnabled(False)
 			self.dockwidget.verticalGroupBox.setEnabled(False)
 			self.dockwidget.KnickButton.setEnabled(False)
 			self.dockwidget.AllCheckBox.setEnabled(False)
@@ -1064,6 +1119,12 @@ class TopopyProfiler:
 			self.Hcanvas.figure.set_tight_layout(False)			
 			
 		if self.dockwidget.DamButton.isChecked() == False:	
+		
+			if self.graph < (len(self.CHs)-1):
+				self.dockwidget.NextButton.setEnabled(True)
+			if self.graph > 0:
+				self.dockwidget.PrevButton.setEnabled(True)
+		
 			self.dockwidget.verticalGroupBox.setEnabled(True)
 			self.lay_show('K')
 			self.dockwidget.AllCheckBox.setEnabled(True)
@@ -1072,7 +1133,6 @@ class TopopyProfiler:
 			self.dockwidget.FileLineEdit.setEnabled(True)	
 			self.dockwidget.PathButton.setEnabled(True)	
 			self.dockwidget.AddButton.setEnabled(True)	
-			self.dockwidget.RegButton.setEnabled(True)
 			self.Ecanvas.mpl_disconnect(self.Edam)
 			self.Ccanvas.mpl_disconnect(self.Cdam)
 			self.iface.mainWindow().statusBar().showMessage('')	
@@ -1169,22 +1229,47 @@ class TopopyProfiler:
 				self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
 		try:
 			if show == 'S':
-				if self.dockwidget.LayStreamCheckBox.isChecked()==False:
-					self.rubberband.reset(QgsWkbTypes.LineGeometry)		
-				else:
+				if self.dockwidget.LayStreamCheckBox.isChecked():
 					for x, y in self.channel.get_xy():
 						self.rubberband.addPoint(QgsPointXY(x, y))
+				else:
+					self.rubberband.reset(QgsWkbTypes.LineGeometry)		
 			if show == 'K':
-				if self.dockwidget.LayKpCheckBox.isChecked()==False:
+				if self.dockwidget.LayKpCheckBox.isChecked():
+					self.clear_graph()
+					self.single_channels()
+					self.show_knickpoints(self.channel)
+					if self.dockwidget.GraphRegCheckBox.isChecked():
+						self.show_reg(self.channel)
+					self.draw_graph()
+					if self.dockwidget.DamButton.isChecked() == False:	
+						self.dockwidget.KnickButton.setEnabled(True)
+				else:
 					self.rubberknick.reset(QgsWkbTypes.PointGeometry)
 					self.clear_graph()
 					self.single_channels()
+					if self.dockwidget.GraphRegCheckBox.isChecked():
+						self.show_reg(self.channel)
 					self.draw_graph()
 					self.dockwidget.KnickButton.setEnabled(False)
+			if show == 'R':
+				if self.dockwidget.GraphRegCheckBox.isChecked():
+					self.clear_graph()
+					self.single_channels()
+					self.show_reg(self.channel)
+
+					if self.dockwidget.LayKpCheckBox.isChecked():
+						self.show_knickpoints(self.channel)
+					self.draw_graph()
 				else:
-					self.show_knickpoints(self.channel)
-					if self.dockwidget.DamButton.isChecked() == False:	
-						self.dockwidget.KnickButton.setEnabled(True)
+					self.rubberknick.reset(QgsWkbTypes.PointGeometry)
+					self.clear_graph()
+					self.single_channels()
+					if self.dockwidget.LayKpCheckBox.isChecked():
+						self.show_knickpoints(self.channel)
+					self.draw_graph()
+					self.dockwidget.KnickButton.setEnabled(False)
+			self.tabs()
 		except:
 			None
 
@@ -1244,6 +1329,7 @@ class TopopyProfiler:
 			if directory:
 
 				kpoints = self.channel._knickpoints	
+				reg = channel._regressions		
 				
 				ElevFig = self.Ecanvas.figure
 				ChiFig = self.Ccanvas.figure
@@ -1272,6 +1358,14 @@ class TopopyProfiler:
 					if self.dockwidget.LayKpCheckBox.isChecked()==True:
 						for kp in kpoints:
 							self.Eaxes.plot(self.channel.get_chi()[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
+					if self.dockwidget.GraphRegCheckBox.isChecked()==True:	
+						for r in range(len(reg)):
+							chi = reg[r][2:4]
+							z = []
+							for c in chi:
+								result = reg[r][0]+reg[r][1]*c
+								z.append(result)
+							self.Caxes.plot(chi, z, color='b', ls='-', c='0.3', lw=1)						
 					self.Eaxes.set_xlabel('χ [m]')		
 					self.Eaxes.set_ylabel('Elevation [m]')
 					self.Ecanvas.draw()
