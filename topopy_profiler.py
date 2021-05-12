@@ -1189,18 +1189,20 @@ class TopopyProfiler:
 			None
 
 	def save (self):
+		saved = False
+		self.iface.mainWindow().statusBar().showMessage('Saving...')
 		format = self.dockwidget.SaveComboBox.currentIndex()
 		if format == 0:
 			filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, 'Save Channels','', 'NPY files (*.npy)')
 			if filename:
 				with open(filename, 'wb') as f:
 					np.save(f, self.CHs)
-					
+				saved = True					
 		if format == 1:
 			filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, 'Save Channel','', 'DAT files (*.dat)')
 			if filename:
 				self.CHs[self.graph].save(filename)
-				
+				saved = True				
 		if format == 2:
 			filename, _filter = QFileDialog.getSaveFileName(self.dockwidget, 'Save Knickpoints','', 'ESRI Shapefile (*.shp)')
 			if filename:
@@ -1236,11 +1238,12 @@ class TopopyProfiler:
 					feat.SetGeometry(geom)			
 					layer.CreateFeature(feat)				
 					print(str(channel.get_xy()[n][0])+ '/' +str(channel.get_xy()[n][1])+ '/' +str(n))	
-					
+				saved = True	
 		if format >= 3:	
 			directory = QFileDialog.getExistingDirectory(self.dockwidget, 'Save Graphics','')	
 			if directory:
-				print(str(directory)+'/elevation.svg')
+
+				kpoints = self.channel._knickpoints	
 				
 				ElevFig = self.Ecanvas.figure
 				ChiFig = self.Ccanvas.figure
@@ -1248,27 +1251,80 @@ class TopopyProfiler:
 				SlpFig = self.Scanvas.figure
 				HypsoFig = self.Hcanvas.figure
 				if format == 3:
-					ElevFig.savefig(str(directory)+'/Elev.png')
-					ChiFig.savefig(str(directory)+'/Chi.png')
-					KsnFig.savefig(str(directory)+'/Ksn.png')
-					SlpFig.savefig(str(directory)+'/Slope.png')
-					HypsoFig.savefig(str(directory)+'/Hypsometric.png')
+					extension = '.png'
 				if format == 4:
-					ElevFig.savefig(str(directory)+'/Elev.svg')
-					ChiFig.savefig(str(directory)+'/Chi.svg')
-					KsnFig.savefig(str(directory)+'/Ksn.svg')
-					SlpFig.savefig(str(directory)+'/Slope.svg')
-					HypsoFig.savefig(str(directory)+'/Hypsometric.svg')
+					extension = '.svg'
 				if format == 5:
-					ElevFig.savefig(str(directory)+'/Elev.ps')
-					ChiFig.savefig(str(directory)+'/Chi.ps')
-					KsnFig.savefig(str(directory)+'/Ksn.ps')
-					SlpFig.savefig(str(directory)+'/Slope.ps')
-					HypsoFig.savefig(str(directory)+'/Hypsometric.ps')
+					extension = '.ps'
 				if format == 6:
-					ElevFig.savefig(str(directory)+'/Elev.eps')
-					ChiFig.savefig(str(directory)+'/Chi.eps')
-					KsnFig.savefig(str(directory)+'/Ksn.eps')
-					SlpFig.savefig(str(directory)+'/Slope.eps')
-					HypsoFig.savefig(str(directory)+'/Hypsometric.eps')
+					extension = '.eps'
+
+				self.dockwidget.tabWidget.setCurrentIndex(0)
+				self.tabs()	
 				
+				try:
+					self.Ecanvas.figure.set_tight_layout(False)
+					ElevFig.savefig(str(directory)+'/Elev'+extension)
+					
+					self.Eaxes.clear()
+					self.Eaxes.plot(list(self.channel.get_chi()[::self.smooth])+list([self.channel.get_chi()[-1]]), list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
+					self.Eaxes.set_xlim(xmin=min(self.channel.get_chi()), xmax=max(self.channel.get_chi()))
+					if self.dockwidget.LayKpCheckBox.isChecked()==True:
+						for kp in kpoints:
+							self.Eaxes.plot(self.channel.get_chi()[kp], self.channel.get_z()[kp], color='b', ls='None', marker='x', ms=10)
+					self.Eaxes.set_xlabel('χ [m]')		
+					self.Eaxes.set_ylabel('Elevation [m]')
+					self.Ecanvas.draw()
+					ElevFig.savefig(str(directory)+'/Chi'+extension)
+					
+					self.Eaxes.clear()				
+					self.Eaxes.plot(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]]), list(self.channel.get_ksn()[::self.smooth])+list([self.channel.get_ksn()[-1]]),  color='0', ls='None', marker='.', ms=1)
+					self.Eaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))				
+					if self.dockwidget.LayKpCheckBox.isChecked()==True:
+						for kp in kpoints:
+							self.Eaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_ksn()[kp],  color='r', ls='None', marker='X', ms=10)			
+					self.Eaxes.set_xlabel('Distance to mouth [m]')
+					self.Eaxes.set_ylabel('ksn')
+					self.Ecanvas.draw()				
+					ElevFig.savefig(str(directory)+'/Ksn'+extension)
+					
+					self.Eaxes.clear()				
+					self.Eaxes.plot(np.array(list(self.channel.get_d(head=False)[::self.smooth])+list([self.channel.get_d(head=False)[-1]])), np.array(list(self.channel.get_slope()[::self.smooth])+list([self.channel.get_slope()[-1]]))*100,  color='0', ls='None', marker='.', ms=1)
+					self.Eaxes.set_xlim(xmin=0, xmax=max(self.channel.get_d()))	
+					if self.dockwidget.LayKpCheckBox.isChecked()==True:
+						for kp in kpoints:
+							self.Eaxes.plot(self.channel.get_d(head=False)[kp], self.channel.get_slope()[kp]*100,  color='r', ls='None', marker='X', ms=10)
+					self.Eaxes.set_xlabel('Distance to mouth [m]')
+					self.Eaxes.set_ylabel('Slope [%]')
+					self.Ecanvas.draw()				
+					ElevFig.savefig(str(directory)+'/Slope'+extension)
+					
+					self.Eaxes.clear()						
+					areas = self.channel.get_a(head=False)
+					sum_areas = sum(self.channel.get_a(head=False))
+					self.hypsometric = ((np.cumsum(areas)/sum_areas)*100)
+					self.Eaxes.plot(list(self.hypsometric[::self.smooth])+list([self.hypsometric[-1]]), list(self.channel.get_z()[::self.smooth])+list([self.channel.get_z()[-1]]), color='r', ls='-', c='0.3', lw=1)
+					self.Eaxes.set_xlim(xmin=0, xmax=max(self.hypsometric))
+					if self.dockwidget.LayKpCheckBox.isChecked()==True:
+						for kp in kpoints:
+							self.Eaxes.plot(self.hypsometric[kp], self.channel.get_z()[kp],  color='b', ls='None', marker='x', ms=10)
+					self.Eaxes.set_xlabel('Area Accumulation [%]')
+					self.Eaxes.set_ylabel('Elevation [m]')
+					self.Ecanvas.draw()				
+					ElevFig.savefig(str(directory)+'/Hypsometric'+extension)
+					
+					self.change_graph()
+					self.Ecanvas.figure.set_tight_layout(True)
+					self.tabs()	
+					
+					saved = True
+				except:
+					self.change_graph()
+					self.Ecanvas.figure.set_tight_layout(True)
+					self.tabs()						
+
+		
+		if saved == True:
+			self.iface.mainWindow().statusBar().showMessage('Saved!')
+		else:
+			self.iface.mainWindow().statusBar().showMessage('Something went wrong!')			
