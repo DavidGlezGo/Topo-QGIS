@@ -1112,11 +1112,9 @@ class TopopyProfiler:
 			self.Cdam = self.Ccanvas.mpl_connect('button_press_event', lambda event: self.dam(event, 'C'))
 			self.iface.mainWindow().statusBar().showMessage( 'Left Point: Left click / Rigth Point: Rigth Click')	
 			
-			self.Ecanvas.figure.set_tight_layout(False)
-			self.Ccanvas.figure.set_tight_layout(False)
-			self.Kcanvas.figure.set_tight_layout(False)
-			self.Scanvas.figure.set_tight_layout(False)
-			self.Hcanvas.figure.set_tight_layout(False)			
+			# self.Ecanvas.figure.set_tight_layout(False)
+			# self.Ccanvas.figure.set_tight_layout(False)
+		
 			
 		if self.dockwidget.DamButton.isChecked() == False:	
 		
@@ -1137,11 +1135,9 @@ class TopopyProfiler:
 			self.Ccanvas.mpl_disconnect(self.Cdam)
 			self.iface.mainWindow().statusBar().showMessage('')	
 			
-			self.Ecanvas.figure.set_tight_layout(True)
-			self.Ccanvas.figure.set_tight_layout(True)
-			self.Kcanvas.figure.set_tight_layout(True)
-			self.Scanvas.figure.set_tight_layout(True)
-			self.Hcanvas.figure.set_tight_layout(True)
+			# self.Ecanvas.figure.set_tight_layout(True)
+			# self.Ccanvas.figure.set_tight_layout(True)
+
 		
 	def dam(self, event, graphic):
 		if event.inaxes:

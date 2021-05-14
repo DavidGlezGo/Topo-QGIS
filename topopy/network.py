@@ -738,14 +738,9 @@ class Network(PRaster):
             row, col = self.ind_2_cell(ch_ix)
             xi, yi = self.cell_2_xy(row, col)
             
-            print('ch_ix: '+str(ch_ix))
             pos = ixcix[ch_ix]
-            print('pos: '+str(pos))
             zi = self._zx[pos]
-            print('Z: '+str(zi))
-            print('AAAAA')
-            print(len(xi))
-            print(len(zi))
+            
             geom = ogr.Geometry(ogr.wkbLineString25D)
             
             for n in range(xi.size):
@@ -770,7 +765,7 @@ class Network(PRaster):
         dataset = driver.CreateDataSource(path)
         sp = osr.SpatialReference()
         sp.ImportFromWkt(self._proj)
-        layer = dataset.CreateLayer("rivers", sp, ogr.wkbLineString)
+        layer = dataset.CreateLayer("rivers", sp, ogr.wkbLineString25D)
         layer.CreateField(ogr.FieldDefn("order", ogr.OFTInteger))
         
         # Get ixcix auxiliar array
@@ -818,9 +813,13 @@ class Network(PRaster):
             feat = ogr.Feature(layer.GetLayerDefn())
             row, col = self.ind_2_cell(river_data)
             xi, yi = self.cell_2_xy(row, col)
-            geom = ogr.Geometry(ogr.wkbLineString)
+            
+            pos = ixcix[river_data]
+            zi = self._zx[pos]
+            
+            geom = ogr.Geometry(ogr.wkbLineString25D)
             for n in range(xi.size):
-                geom.AddPoint(xi[n], yi[n])
+                geom.AddPoint(xi[n], yi[n], zi[n])
                 
             feat.SetGeometry(geom)
             chanorder = ch_ord[cell]
@@ -939,7 +938,7 @@ class Network(PRaster):
         dataset = driver.CreateDataSource(out_shp)
         sp = osr.SpatialReference()
         sp.ImportFromWkt(self._proj)
-        layer = dataset.CreateLayer("rivers", sp, ogr.wkbLineString)
+        layer = dataset.CreateLayer("rivers", sp, ogr.wkbLineString25D)
         
         # Add fields
         campos = ["id_profile", "L", "area_e6", "z", "chi", "ksn", "rksn", "slope", "rslope"]
@@ -992,6 +991,7 @@ class Network(PRaster):
                     row, col = self.ind_2_cell(segment_cells)
                     xi, yi = self.cell_2_xy(row, col)
                     pos = ixcix[segment_cells][::-1]
+                    zi = self._zx[pos[::-1]]
                     mouth_cell = ixcix[segment_cells[-1]]
                     mid_cell = ixcix[segment_cells[int(len(segment_cells)/2)]]
                     dx = self._dx[pos]
@@ -1035,9 +1035,9 @@ class Network(PRaster):
                     feat.SetField("rslope", float(rslope))
                     
                     # Create geometry
-                    geom = ogr.Geometry(ogr.wkbLineString)
+                    geom = ogr.Geometry(ogr.wkbLineString25D)
                     for n in range(xi.size):
-                        geom.AddPoint(xi[n], yi[n])
+                        geom.AddPoint(xi[n], yi[n], zi[n])
                     feat.SetGeometry(geom)
                     # Add segment feature to the shapefile
                     layer.CreateFeature(feat)

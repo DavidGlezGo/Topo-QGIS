@@ -72,7 +72,7 @@ class Streams2shp(QgsProcessingAlgorithm):
 		Here we define the inputs and output of the algorithm, along
 		with some other properties.
 		"""
-		self.addParameter(QgsProcessingParameterFile(self.INPUT_NT,  self.tr("Network")))
+		self.addParameter(QgsProcessingParameterFile(self.INPUT_NT,  self.tr("Network"), extension="dat"))
 		self.addParameter(QgsProcessingParameterBoolean(self.CON, "Segmented Streams", False))
 		self.addParameter(QgsProcessingParameterVectorDestination(self.OUTPUT_SHP, self.tr("Streams")))
  
