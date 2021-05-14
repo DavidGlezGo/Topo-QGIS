@@ -88,7 +88,7 @@ class Get_Channels(QgsProcessingAlgorithm):
 		network = self.parameterAsFile(parameters, self.INPUT_NT, context)
 		output_ch = self.parameterAsFileOutput(parameters, self.OUTPUT_CH, context)
 		
-		feedback.setProgressText('(1/3) Obtaining extremes of polylines.')
+		feedback.setProgressText('(1/2) Obtaining Heads and Mouths.')
 		try:
 			explode = processing.run("native:explodelines", {'INPUT': parameters[self.INPUT_CH], 'OUTPUT': 'memory:' })['OUTPUT']
 		except:
@@ -100,68 +100,76 @@ class Get_Channels(QgsProcessingAlgorithm):
 		unic=[]
 		rep = []
 		for feature in features:
-			
+		
 			geom = feature.geometry()
-			geom.length()
-			L = geom.asPolyline()
-			for X in L:
+			STR = str(geom)
+			BBB = STR.replace('<QgsGeometry: MultiLineStringZ ((','').replace('>','').replace('<QgsGeometry: LineStringZ (','').replace(')','')
+
+			B=BBB.split(', ')
+			E=()
+			for b in B:
+				C = b.split(' ')
+				D = ()
+				for c in C:
+					D+=(float(c),)
+				E+=(D,)
+			
+			for X in E:
 				if X in unic :
 					unic.remove(X)
 					rep.append(X)
+					
 				else:
 					unic.append(X)
+
 		for r in rep:
-			
 			if r in unic:
 				unic.remove(r)
+
+		unic.sort(key = lambda x: x[2], reverse=True)
 				
-		feedback.setProgressText('(2/3) Classifying extremes.')
 ##----------------------------------------------------
 		N = Network()
 		N._load(network)
-		H = N.get_stream_poi("heads", "IND")
 ##----------------------------------------------------
-		
-		heads = []
-		mouths = []
-		
-		Channels = []
-		for u in unic:
-			
-			cell = N.xy_2_cell(u[0],u[1])
-			ind = N.cell_2_ind(cell[0],cell[1])
-			
-			if ind in H:
-				heads.append((u[0],u[1]))
-			else:
-				mouths.append((u[0],u[1]))
 
-		feedback.setProgressText('(3/3) Calculating and organizing channels')#, (if there are many channels it may take a bit).')	
+		feedback.setProgressText('(2/2) Calculating and organizing channels')#, (if there are many channels it may take a bit).')	
 
 		Dicc_L = {}
 		Dicc_CH = {}
 		
-		for head in heads:
-			for mouth in mouths:
-				
-				CH = N.get_channel(head, mouth)
-				
-				if not head in Dicc_L.keys():
-					Dicc_L.update({head:CH.get_length()})
-					Dicc_CH.update({head:CH})
-				elif CH.get_length() < Dicc_L[head]:
-					Dicc_L.update({head:CH.get_length()})
-					Dicc_CH.update({head:CH})
-					
+		elev = [z[2] for z in unic]
 
+		for h in unic:
+			for m in unic:
+				if h[2]>m[2]:
+					head = (h[0],h[1])
+					mouth = (m[0],m[1])
+					CH = N.get_channel(head, mouth)
+					if CH._zx[0] in elev:
+						if not head in Dicc_L.keys():
+							Dicc_L.update({head:CH.get_length()})
+							Dicc_CH.update({head:CH})
+						elif CH.get_length() < Dicc_L[head]:
+							Dicc_L.update({head:CH.get_length()})
+							Dicc_CH.update({head:CH})
 		
-		Channels = tuple(Dicc_CH.values())
+		Channels = list(Dicc_CH.values())
 		
-		feedback.setProgressText("- HEADS: " + str(len(heads)))			
-		feedback.setProgressText("- MOUTHS: " + str(len(mouths)))
-		feedback.setProgressText( "- CHANNELS: " + str(len(Channels)))
+		ends=[]
 		
-		np.save(output_ch, Channels)
+		for CH in Channels:
+			if (min(CH._zx) in ends) == False:
+				ends.append(min(CH._zx))
+	
+		Streams = []
+		for CH in Channels:
+			if (max(CH._zx) in ends) == False:
+				Streams.append(CH)
+				
+		feedback.setProgressText( "- CHANNELS: " + str(len(Streams)))
+		
+		np.save(output_ch, Streams)
 		
 		
 		results = {self.OUTPUT_CH : output_ch, }

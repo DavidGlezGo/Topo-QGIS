@@ -1,7 +1,7 @@
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import QgsProcessingAlgorithm, QgsProcessingParameterFeatureSource, QgsProcessingParameterField, QgsProcessingParameterFile, QgsProcessingParameterFileDestination, QgsProcessing
 from .. import topopy
-from ..topopy import * #DEM, Flow, Network
+from ..topopy import DEM, Flow, Network
 from qgis import processing
 import processing
 import numpy as np
@@ -88,21 +88,34 @@ class Get_Channels(QgsProcessingAlgorithm):
 		network = self.parameterAsFile(parameters, self.INPUT_NT, context)
 		output_ch = self.parameterAsFileOutput(parameters, self.OUTPUT_CH, context)
 		
-		feedback.setProgressText('(1/3) Obtaining Heads and Mouths.')
+		feedback.setProgressText('(1/2) Obtaining Heads and Mouths.')
 		try:
 			explode = processing.run("native:explodelines", {'INPUT': parameters[self.INPUT_CH], 'OUTPUT': 'memory:' })['OUTPUT']
 		except:
 			feedback.setProgressText('¡¡¡¡¡ERROR!!!!! The input layer is not a polyline ')
-		
+			
+
 		features = explode.getFeatures()
+
 		unic=[]
 		rep = []
 		for feature in features:
+		
 			geom = feature.geometry()
+			print(geom[0])
 			STR = str(geom)
-			L = geom.asPolyline()
-			for l in L:
-				X = (l[0], l[1])
+			BBB = STR.replace('<QgsGeometry: MultiLineStringZ ((','').replace('>','').replace('<QgsGeometry: LineStringZ (','').replace(')','')
+
+			B=BBB.split(', ')
+			E=()
+			for b in B:
+				C = b.split(' ')
+				D = ()
+				for c in C:
+					D+=(float(c),)
+				E+=(D,)
+			
+			for X in E:
 				if X in unic :
 					unic.remove(X)
 					rep.append(X)
@@ -113,49 +126,49 @@ class Get_Channels(QgsProcessingAlgorithm):
 		for r in rep:
 			if r in unic:
 				unic.remove(r)
+
+		unic.sort(key = lambda x: x[2], reverse=True)
 				
 ##----------------------------------------------------
 		N = Network()
 		N._load(network)
 ##----------------------------------------------------
 
-		feedback.setProgressText('(2/3) Calculating channels')#, (if there are many channels it may take a bit).')	
+		feedback.setProgressText('(2/2) Calculating and organizing channels')#, (if there are many channels it may take a bit).')	
 
 		Dicc_L = {}
 		Dicc_CH = {}
-		ends=[]	
 		
-		A = len(unic)
-		B = 0
+		elev = [z[2] for z in unic]
+
 		for h in unic:
-			B+=1
-			feedback.setProgressText(str(int((B/A)*100))+'%')
-			if (h in ends):
-				continue
-			else:
-				for m in unic:
+			for m in unic:
+				if h[2]>m[2]:
 					head = (h[0],h[1])
 					mouth = (m[0],m[1])
 					CH = N.get_channel(head, mouth)
-					if (tuple(CH.get_xy()[-1]) in ends) == False:
-						ends.append(tuple(CH.get_xy()[-1]))
-					if not head in Dicc_L.keys():
-						Dicc_L.update({head:CH.get_length()})
-						Dicc_CH.update({head:CH})
-					elif CH.get_length() < Dicc_L[head]:
-						Dicc_L.update({head:CH.get_length()})
-						Dicc_CH.update({head:CH})
+					if CH._zx[0] in elev:
+						if not head in Dicc_L.keys():
+							Dicc_L.update({head:CH.get_length()})
+							Dicc_CH.update({head:CH})
+						elif CH.get_length() < Dicc_L[head]:
+							Dicc_L.update({head:CH.get_length()})
+							Dicc_CH.update({head:CH})
 		
 		Channels = list(Dicc_CH.values())
-
-		feedback.setProgressText('(3/3) Checking channels')
 		
+		ends=[]
+		
+		for CH in Channels:
+			if (min(CH._zx) in ends) == False:
+				ends.append(min(CH._zx))
+	
 		Streams = []
 		for CH in Channels:
-			if (tuple(CH.get_xy()[0]) in ends) == False:
+			if (max(CH._zx) in ends) == False:
 				Streams.append(CH)
 				
-		feedback.setProgressText('\n' + '- CHANNELS: ' + str(len(Streams)) + '\n')
+		feedback.setProgressText( "- CHANNELS: " + str(len(Streams)))
 		
 		np.save(output_ch, Streams)
 		
