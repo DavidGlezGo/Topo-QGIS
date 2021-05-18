@@ -495,6 +495,7 @@ class TopopyProfiler:
 			self.all_channels()
 		else:
 			self.change_graph()
+		self.iface.mainWindow().statusBar().showMessage('Smoothed!')		
 			
 	def change_graph(self):
 		print('change')
@@ -680,6 +681,7 @@ class TopopyProfiler:
 			self.rubberpoint.reset(QgsWkbTypes.PointGeometry)
 			self.rubberknick.reset(QgsWkbTypes.PointGeometry)	
 			
+			self.iface.mainWindow().statusBar().showMessage('All channels plotted!')			
 		
 			
 		elif self.dockwidget.AllCheckBox.isChecked()==False:
@@ -698,7 +700,9 @@ class TopopyProfiler:
 			self.dockwidget.LayStreamCheckBox.setEnabled(True)			
 			self.dockwidget.LayKpCheckBox.setEnabled(True)			
 			self.dockwidget.GraphRegCheckBox.setEnabled(True)		
-
+			
+			self.iface.mainWindow().statusBar().showMessage('Plotted channel '+ str(self.graph+1)+'!')	
+			
 	def clear_graph(self):
 		''' Clear all graphs '''
 		
@@ -738,17 +742,18 @@ class TopopyProfiler:
 			
 		if len(self.CHs) != 0:
 			if self.dockwidget.KnickButton.isChecked()==False:
-				if self.dockwidget.tabWidget.currentIndex() == 1:
-					self.dockwidget.RegButton.setEnabled(True)
-				else:
-					self.dockwidget.RegButton.setEnabled(False)
+				if self.dockwidget.AllCheckBox.isChecked()==False:
+					if self.dockwidget.tabWidget.currentIndex() == 1 and self.dockwidget.DamButton.isChecked()== False:
+						self.dockwidget.RegButton.setEnabled(True)
+					else:
+						self.dockwidget.RegButton.setEnabled(False)
 
-				if self.dockwidget.tabWidget.currentIndex() <=1 and self.regAct == False:
-					self.dockwidget.DamButton.setEnabled(True)	
-				elif self.dockwidget.tabWidget.currentIndex() ==1 and self.regAct == True:
-					self.dockwidget.DamButton.setEnabled(True)	
-				else:
-					self.dockwidget.DamButton.setEnabled(False)			
+					if self.dockwidget.tabWidget.currentIndex() <=1 and self.regAct == False:
+						self.dockwidget.DamButton.setEnabled(True)	
+					elif self.dockwidget.tabWidget.currentIndex() ==1 and self.regAct == True:
+						self.dockwidget.DamButton.setEnabled(True)	
+					else:
+						self.dockwidget.DamButton.setEnabled(False)			
 			else:
 				self.knick_buttons()
 
