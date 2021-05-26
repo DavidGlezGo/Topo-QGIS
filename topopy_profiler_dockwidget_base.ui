@@ -325,24 +325,6 @@
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="HypsoTab">
-         <attribute name="title">
-          <string>Hypsometric</string>
-         </attribute>
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QFrame" name="HypsoProf">
-            <property name="cursor">
-             <cursorShape>CrossCursor</cursorShape>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_14"/>
-           </widget>
-          </item>
-         </layout>
-        </widget>
         <widget class="QWidget" name="MoreTab">
          <attribute name="title">
           <string>More</string>
@@ -413,7 +395,7 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_8">
                <item>
-                <widget class="QSpinBox" name="SmoothSpinBox">
+                <widget class="QSpinBox" name="SimplifySpinBox">
                  <property name="maximumSize">
                   <size>
                    <width>45</width>
@@ -429,7 +411,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="SmoothButton">
+                <widget class="QPushButton" name="SimplifyButton">
                  <property name="maximumSize">
                   <size>
                    <width>15</width>
@@ -444,7 +426,7 @@
                <item>
                 <widget class="QLabel" name="label_2">
                  <property name="text">
-                  <string>Smooth</string>
+                  <string>Simplify</string>
                  </property>
                 </widget>
                </item>
