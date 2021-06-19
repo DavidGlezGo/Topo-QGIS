@@ -38,13 +38,13 @@ class Fill(QgsProcessingAlgorithm):
         """
         Returns the unique ID of the group this algorithm belongs to.
         """
-        return "drainage_net_processing"
+        return "dem_processing"
 
     def group(self):
         """
         Returns the name of the group this algoritm belongs to.
         """
-        return self.tr("Drainage Network Processing")
+        return self.tr("DEM Processing")
 
     def shortHelpString(self):
         """
@@ -53,11 +53,11 @@ class Fill(QgsProcessingAlgorithm):
         texto = """
                     This script fills the pits of a Digital Elevacion Model (DEM)
                     
-					Input DEM : Input Digital Elevation Model (DEM).
-					
-					Use alternate fill: Alternative calculation algorithm.
+                    Input DEM : Input Digital Elevation Model (DEM).
                     
-					Filled DEM : Output pi-filled DEM.
+                    Use alternate fill: Alternative calculation algorithm.
+                    
+                    Filled DEM : Output pi-filled DEM.
                     """
         return texto
  
@@ -89,8 +89,8 @@ class Fill(QgsProcessingAlgorithm):
         dem = DEM(input_dem.source())
         feedback.setProgressText(str(type(dem)))
         if alternative:
-            fill = dem.fill_sinks2()
             feedback.setProgressText("Alternative Fill")
+            fill = dem.fill_sinks2()
         else:
             fill = dem.fill_sinks()
             

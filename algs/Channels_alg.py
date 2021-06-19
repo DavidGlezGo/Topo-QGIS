@@ -40,13 +40,13 @@ class Get_Channels(QgsProcessingAlgorithm):
 		"""
 		Returns the unique ID of the group this algorithm belongs to.
 		"""
-		return "drainage_net_processing"
+		return "drainage_ch_processing"
 
 	def group(self):
 		"""
 		Returns the name of the group this algoritm belongs to.
 		"""
-		return self.tr("Drainage Network Processing")
+		return self.tr("Drainage Channel Processing")
 
 	def shortHelpString(self):
 		"""

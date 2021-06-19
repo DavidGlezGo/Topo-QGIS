@@ -1,17 +1,16 @@
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.core import QgsProcessingAlgorithm, QgsProcessingParameterRasterLayer, QgsProcessingParameterRasterDestination, QgsProcessingParameterBoolean
+from qgis.core import QgsProcessingAlgorithm, QgsProcessingParameterFile, QgsProcessingParameterRasterLayer, QgsProcessingParameterVectorDestination, QgsProcessingParameterBoolean, QgsProcessingParameterFileDestination
 from .. import topopy
-from ..topopy import DEM, Flow
+from ..topopy import DEM, Flow, Network
 from qgis import processing
 
-class FlowDir(QgsProcessingAlgorithm):
+class Network2csv(QgsProcessingAlgorithm):
     # Constants used to refer to parameters and outputs They will be
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
-
-    INPUT_DEM = 'INPUT_DEM'
-    OUTPUT_FD = 'OUTPUT_FD'
-    VERBOSE = 'VERBOSE'
+    
+    INPUT_NT = 'INPUT_NT'
+    OUTPUT_CSV = 'OUTPUT_CSV'
  
     def __init__(self):
         super().__init__()
@@ -24,42 +23,42 @@ class FlowDir(QgsProcessingAlgorithm):
         Rerturns the algorithm name, used to identify the algorithm.
         Must be unique within each provider and should contain lowercase alphanumeric characters only.
         """
-        return "flowdir"
+        return "Network2csv"
      
     def displayName(self):
         """
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr("Flow Direction") 
+        return self.tr("Network to CSV") 
     
     def groupId(self):
         """
         Returns the unique ID of the group this algorithm belongs to.
         """
-        return "dem_processing"
+        return "drainage_net_processing"
 
     def group(self):
         """
         Returns the name of the group this algoritm belongs to.
         """
-        return self.tr("DEM Processing")
+        return self.tr("Drainage Network Processing")
 
     def shortHelpString(self):
         """
         Returns a localised short helper string for the algorithm. 
         """
         texto = """
-                    This script creates a flow direction raster. This is not an usual raster, but a raster with a special format used by topopy.
+                    This script extract streams orderded by strahler or shreeve. Cell values will have a value acording with the order of the segment they belong.
                     
-                    Show Messages: Show progress messages (useful for big rasters).
-                    
-                    Input Filled DEM : Input pit-filled Digital Elevation Model (DEM).
+                    Network: .dat file with Network information..
 
-                    Output Flow: Output flow direction raster.
+                    Segmented Streams: [Checked] the Strahler and Shreeve order are calculated, [Not Checked] only Strahler order.
+                    
+                    Stream Order: Output polylineas 25D with streams order.
                     """
         return texto
- 
+    
     def tr(self, string):
         return QCoreApplication.translate('Processing', string)
 
@@ -72,23 +71,21 @@ class FlowDir(QgsProcessingAlgorithm):
         Here we define the inputs and output of the algorithm, along
         with some other properties.
         """
-        self.addParameter(QgsProcessingParameterBoolean(self.VERBOSE, "Show Messages", False))
-        self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_DEM,  self.tr("Input Filled DEM")))
-        self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT_FD, "FLow Direcction", None, False))
-
-
+        self.addParameter(QgsProcessingParameterFile(self.INPUT_NT,  self.tr("Network"), extension="dat"))
+        self.addParameter(QgsProcessingParameterFileDestination(self.OUTPUT_CSV, "Network Output", 'CSV files (*.csv)'))
  
     def processAlgorithm(self, parameters, context, feedback):
         """
         Here is where the processing itself takes place.
         """
-        input_dem = self.parameterAsRasterLayer(parameters, self.INPUT_DEM, context)
-        output_fd = self.parameterAsOutputLayer(parameters, self.OUTPUT_FD, context)
-        verbose = self.parameterAsBool(parameters, self.VERBOSE, context)
+        input_nt = self.parameterAsFile(parameters, self.INPUT_NT, context)
+        output_csv = self.parameterAsFileOutput(parameters, self.OUTPUT_CSV, context)
+               
+        nt = Network()
+        nt._load(input_nt)
         
-        dem = DEM(input_dem.source())
-        fd = Flow(dem, filled =True, verbose=verbose, verb_func=feedback.setProgressText)
-        fd.save(output_fd)
+        nt.export_to_points(output_csv)
         
-        results = {self.OUTPUT_FD : output_fd}
+        
+        results = {self.OUTPUT_CSV : output_csv, }
         return results

@@ -13,6 +13,7 @@
 # Last modified 07 february 2021
 
 import numpy as np
+import math
 import os
 import ogr, osr
 from scipy.sparse import csc_matrix
@@ -564,7 +565,43 @@ class Network(PRaster):
         out_arr = np.array((self._ix, x, y, self._zx, self._dx, self._ax, self._chi, 
                             self._slp, self._ksn, self._r2slp, self._r2ksn)).T
         np.savetxt(path, out_arr, delimiter=";", header=cab, comments="", encoding="utf8")
-    
+
+    def export_point_shp(self, path):
+        
+        # Create shapefile
+        driver = ogr.GetDriverByName("ESRI Shapefile")
+        dataset = driver.CreateDataSource(path)
+        sp = osr.SpatialReference()
+        sp.ImportFromWkt(self._proj)
+        layer = dataset.CreateLayer("Nodes", sp, ogr.wkbPoint25D)
+
+        campos = ['id', 'z', 'distance', 'area', 'chi', 'ksn', 'rksn', 'slope', 'rslope']
+        tipos = [0, 2, 2, 2, 2, 2, 2, 2, 2]
+        for n in range(len(campos)):
+            layer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))            
+        
+        for n in range(len(self._ix)):
+        
+            feat = ogr.Feature(layer.GetLayerDefn())
+            feat.SetField("id", int(self._ix[n]))
+            feat.SetField("z", float(self._zx[n]))
+            feat.SetField("distance", float(self._dx[n]))
+            feat.SetField("area_e6", float(self._ax[n]/1000000))
+            feat.SetField("chi", float(self._chi[n]))
+            feat.SetField("ksn", float(self._ksn[n]))
+            feat.SetField("rksn", float(self._r2slp[n]))
+            feat.SetField("slope", float(self._slp[n]))
+            feat.SetField("rslope", float(self._r2slp[n]))            
+
+            row, col = self.ind_2_cell(self._ix[n])
+            x, y = self.cell_2_xy(row, col)
+            
+            # Create geometry
+            geom = ogr.Geometry(ogr.wkbPoint25D)
+            geom.AddPoint(x, y, self._zx[n])
+            feat.SetGeometry(geom)            
+            layer.CreateFeature(feat)            
+        
     def get_streams(self, asgrid=True):
         """
         This function outputs a grid representation of the Network object
@@ -635,10 +672,10 @@ class Network(PRaster):
             kind = 'strahler'
         
         # Get grid channel cells
-        str_ord = np.zeros(self.get_ncells(), dtype=np.int8)
+        str_ord = np.zeros(self.get_ncells(), dtype=np.int64)
         str_ord[self._ix] = 1
         str_ord[self._ixc] = 1
-        visited = np.zeros(self.get_ncells(), dtype=np.int8)
+        visited = np.zeros(self.get_ncells(), dtype=np.int64)
     
         if kind == 'strahler':
             for n in range(len(self._ix)):
@@ -1047,6 +1084,7 @@ class Network(PRaster):
         
         layer = None
         dataset = None
+
 
 
 class BNetwork(Network):
@@ -1652,6 +1690,97 @@ class Channel(PRaster):
             ksn = ksn[::-1]
         return ksn
           
+    def channel_to_shp(self, path=""):
+    
+        driver = ogr.GetDriverByName("ESRI Shapefile")
+        dataset = driver.CreateDataSource(path)        
+        sp = osr.SpatialReference()
+        sp.ImportFromWkt(self._proj)
+ 
+        layer = dataset.CreateLayer("Channel", sp, geom_type=ogr.wkbLineString25D) 
+        
+        # Add fields
+        campos = ["L", "area_e6", "z", "chi", "ksn", "slope"]
+        tipos = [2, 2, 2, 2, 2, 2]
+        for n in range(len(campos)):
+            layer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))
             
+        id = 0
+        unic = []
+        KP = False        
+
+        if len(self._knickpoints) > 0:
+            KP = True
+
+        if KP == True:
+            output_kp = self.parameterAsOutputLayer(parameters, self.OUTPUT_KPs, context)
+            kpdataset = driver.CreateDataSource(path)
+            kplayer = kpdataset.CreateLayer("Knickpoints", sp, geom_type=ogr.wkbPoint25D)    
+            
+            campos = ['id', 'channel', 'z', 'chi', 'ksn', 'rksn', 'slope', 'rslope']
+            tipos = [0, 0, 2, 2, 2, 2, 2, 2]
+            for n in range(len(campos)):
+                kplayer.CreateField(ogr.FieldDefn(campos[n], tipos[n]))    
+
+        ind = 0
+        Ich = len(self._ax)
+        XY = self.get_xy()
+        processing = True
+        while processing:            
+            if ind < Ich-3:    
+                if tuple(XY[ind]) in unic:
+                    processing = False
+                    continue
+                else:
+                    dx = np.mean([self._dx[ind], self._dx[ind+1]])
+                    zx = np.mean([self._zx[ind], self._zx[ind+1]])
+                    chi = np.mean([self._chi[ind], self._chi[ind+1]])
+                    slope = np.mean([self._slp[ind], self._slp[ind+1]])
+                    ksn = np.mean([self._ksn[ind],self._ksn[ind+1]])
+                    area = np.mean([self._ax[ind],self._ax[ind+1]])
+
+                    feat = ogr.Feature(layer.GetLayerDefn())
+                    feat.SetField("L", float(dx))
+                    feat.SetField("area_e6", float(area/1000000))
+                    feat.SetField("z", float(zx))
+                    feat.SetField("chi", float(chi))
+                    feat.SetField("ksn", float(ksn))
+                    feat.SetField("slope", float(slope))
+                    
+                    # Create geometry
+                    geom = ogr.Geometry(ogr.wkbLineString25D)
+                    geom.AddPoint(XY[ind][0], XY[ind][1], self._zx[ind])
+                    geom.AddPoint(XY[ind+1][0],XY[ind+1][1], self._zx[ind+1])
+                    unic.append(tuple(XY[ind]))
+                
+                feat.SetGeometry(geom)
+                # Add segment feature to the shapefile
+                layer.CreateFeature(feat)
+                
+                ind += 1
+                
+            else:                
+                processing = False
+                continue
+                
+        if KP == True:
+            for n in self._knickpoints:
+                id +=1
+                feat = ogr.Feature(kplayer.GetLayerDefn())
+                feat.SetField('id', int(id))                    
+                feat.SetField('z', float(self._zx[n]))
+                feat.SetField('chi', float(self._chi[n]))
+                feat.SetField('ksn', float(self._ksn[n]))
+                feat.SetField('rksn', float(self._R2ksn[n]))
+                feat.SetField('slope', float(self._slp[n]))
+                feat.SetField('rslope', float(self._R2slp[n]))
+                
+                # Create geometry
+                geom = ogr.Geometry(ogr.wkbPoint25D)
+                geom.AddPoint(self.get_xy()[n][0], self.get_xy()[n][1], self._zx[n])
+                feat.SetGeometry(geom)            
+                kplayer.CreateFeature(feat)
+
+    
 class NetworkError(Exception):
     pass

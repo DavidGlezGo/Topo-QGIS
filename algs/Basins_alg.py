@@ -1,5 +1,5 @@
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.core import QgsProcessingAlgorithm, QgsProcessingParameterRasterLayer, QgsProcessingParameterRasterDestination, QgsProcessingParameterNumber
+from qgis.core import QgsProcessingAlgorithm, QgsProcessingParameterRasterLayer, QgsProcessingParameterRasterDestination, QgsProcessingParameterNumber, QgsProcessingParameterFeatureSource, QgsProcessing
 from .. import topopy
 from ..topopy import DEM, Flow
 from qgis import processing
@@ -11,6 +11,7 @@ class Get_Basins(QgsProcessingAlgorithm):
 	
 	INPUT_FD = 'INPUT_FD'
 	MIN_AREA = 'MIN_AREA'
+	OUTLETS = 'OUTLETS'
 	OUTPUT_BAS = 'OUTPUT_BAS'
  
 	def __init__(self):
@@ -37,13 +38,13 @@ class Get_Basins(QgsProcessingAlgorithm):
 		"""
 		Returns the unique ID of the group this algorithm belongs to.
 		"""
-		return "drainage_net_processing"
+		return "dem_processing"
 
 	def group(self):
 		"""
 		Returns the name of the group this algoritm belongs to.
 		"""
-		return self.tr("Drainage Network Processing")
+		return self.tr("DEM Processing")
 
 	def shortHelpString(self):
 		"""
@@ -74,6 +75,7 @@ class Get_Basins(QgsProcessingAlgorithm):
 		"""
 		self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_FD,  self.tr("Flow Direction")))
 		self.addParameter(QgsProcessingParameterNumber(self.MIN_AREA, self.tr("Minimum area (%)"), QgsProcessingParameterNumber.Double, 0.5, True, 0.001, 100))
+		self.addParameter(QgsProcessingParameterFeatureSource(self.OUTLETS,  "Outlets", [QgsProcessing.TypeVectorPoint], optional = True))
 		self.addParameter(QgsProcessingParameterRasterDestination(self.OUTPUT_BAS, self.tr("Basins"), None, False))
  
 	def processAlgorithm(self, parameters, context, feedback):
@@ -82,14 +84,23 @@ class Get_Basins(QgsProcessingAlgorithm):
 		"""
 		input_fd = self.parameterAsRasterLayer(parameters, self.INPUT_FD, context)
 		min_area = self.parameterAsDouble(parameters, self.MIN_AREA, context)
+		outlets = self.parameterAsSource(parameters, self.OUTLETS, context)
 		output_bas = self.parameterAsOutputLayer(parameters, self.OUTPUT_BAS, context)
-		
-		
+
 		fd = Flow()
 		fd.load(input_fd.source())
 		
 		area = min_area/100
-		gbas = fd.get_drainage_basins(min_area=area)
+		
+		if outlets != None:
+			features = outlets.getFeatures()
+			out_arr = []
+			for feature in features:
+				geom = feature.geometry()
+				P = geom.asPoint()
+				out_arr.append(P)
+			
+		gbas = fd.get_drainage_basins(outlets=outlets, min_area=area)
 		gbas.save(output_bas)
 		
 		results = {self.OUTPUT_BAS : output_bas, }

@@ -33,32 +33,32 @@ class Channel2Vector(QgsProcessingAlgorithm):
 		Returns the translated algorithm name, which should be used for any
 		user-visible display of the algorithm name.
 		"""
-		return self.tr("Channels to Vectorial") 
+		return self.tr("Channel to Vectorial") 
 	
 	def groupId(self):
 		"""
 		Returns the unique ID of the group this algorithm belongs to.
 		"""
-		return "drainage_net_processing"
+		return "drainage_ch_processing"
 
 	def group(self):
 		"""
 		Returns the name of the group this algoritm belongs to.
 		"""
-		return self.tr("Drainage Network Processing")
+		return self.tr("Drainage Channel Processing")
 
 	def shortHelpString(self):
 		"""
 		Returns a localised short helper string for the algorithm. 
 		"""
 		texto = """
-					This script extract streams orderded by strahler or shreeve. Cell values will have a value acording with the order of the segment they belong.
+					this script converts channels from .npy format to vectorial format.
 					
-					Flow: Flow direccion raster.
+					Input Channels: .npy file with the channels inside.
 
-					Method: Select the method for calculating the stream order.
+					Channels: polyline 25D ShapeFile with channels information.
 					
-					Stream Order: Output raster with streams ordered.
+					Knickpoints: point 25D ShapeFile with channels knickpoint information.
 					"""
 		return texto
 	

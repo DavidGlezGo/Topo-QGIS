@@ -6,7 +6,7 @@ from qgis import processing
 import ogr, osr
 import numpy as np
 
-class Chi_shp(QgsProcessingAlgorithm):
+class Net_shp(QgsProcessingAlgorithm):
 	# Constants used to refer to parameters and outputs They will be
 	# used when calling the algorithm from another algorithm, or when
 	# calling from the QGIS console.
@@ -29,14 +29,14 @@ class Chi_shp(QgsProcessingAlgorithm):
 		Rerturns the algorithm name, used to identify the algorithm.
 		Must be unique within each provider and should contain lowercase alphanumeric characters only.
 		"""
-		return "CHIshp"
+		return "Network_vectorial"
 	 
 	def displayName(self):
 		"""
 		Returns the translated algorithm name, which should be used for any
 		user-visible display of the algorithm name.
 		"""
-		return self.tr("CHI") 
+		return self.tr("Network to polylines") 
 	
 	def groupId(self):
 		"""

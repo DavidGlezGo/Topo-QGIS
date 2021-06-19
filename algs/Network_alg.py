@@ -34,7 +34,7 @@ class Get_Network(QgsProcessingAlgorithm):
 		Returns the translated algorithm name, which should be used for any
 		user-visible display of the algorithm name.
 		"""
-		return self.tr("Network Info") 
+		return self.tr("Network") 
 	
 	def groupId(self):
 		"""
@@ -94,7 +94,7 @@ class Get_Network(QgsProcessingAlgorithm):
 		with some other properties.
 		"""
 		self.addParameter(QgsProcessingParameterRasterLayer(self.INPUT_FD,  self.tr("Flow Direction")))
-		self.addParameter(QgsProcessingParameterNumber(self.THRESHOLD, self.tr("Threshold"), QgsProcessingParameterNumber.Integer, optional=True,  minValue=1))
+		self.addParameter(QgsProcessingParameterNumber(self.THRESHOLD, self.tr("Threshold"), QgsProcessingParameterNumber.Double, 0.25, optional=True,  minValue=0, maxValue=100))
 		self.addParameter(QgsProcessingParameterNumber(self.THETAREF, self.tr("Thetaref"), QgsProcessingParameterNumber.Double, 0.45,  optional=True,  minValue=0))
 		self.addParameter(QgsProcessingParameterNumber(self.NPOINTS, self.tr("npoints"), QgsProcessingParameterNumber.Integer, 5, optional=True,  minValue=1))
 		self.addParameter(QgsProcessingParameterFileDestination(self.OUTPUT_N, "Network Output", 'DAT files (*.dat)'))
@@ -105,7 +105,7 @@ class Get_Network(QgsProcessingAlgorithm):
 		"""
 
 		input_fd = self.parameterAsRasterLayer(parameters, self.INPUT_FD, context)
-		threshold = self.parameterAsInt(parameters, self.THRESHOLD, context)
+		threshold = self.parameterAsDouble(parameters, self.THRESHOLD, context)
 		thetaref = self.parameterAsDouble(parameters, self.THETAREF, context)
 		npoints = self.parameterAsInt(parameters, self.NPOINTS, context)
 		output_n = self.parameterAsFileOutput(parameters, self.OUTPUT_N, context)
@@ -113,7 +113,8 @@ class Get_Network(QgsProcessingAlgorithm):
 		fd = Flow()
 		fd.load(input_fd.source())
 		
-		nt = Network(fd, threshold, thetaref, npoints, gradients=True)
+		Ts=int(fd.get_ncells()*threshold/100)
+		nt = Network(fd, Ts, thetaref, npoints, gradients=True)
 		nt.save(output_n)
 		
 		
